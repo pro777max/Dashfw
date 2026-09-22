@@ -1,0 +1,22 @@
+name: build
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: espressif/idf:5.4.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          . $IDF_PATH/export.sh
+          idf.py set-target esp32p4
+          idf.py build
+          esptool.py merge_bin -o dash_merged.bin --flash_mode qio --flash_size 16MB \
+            0x2000 build/bootloader/bootloader.bin \
+            0x8000 build/partition_table/partition-table.bin \
+            0x10000 build/dash.bin
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          files: dash_merged.bin
+          prerelease: true
