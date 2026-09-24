@@ -14,6 +14,8 @@ jobs:
           idf.py set-target esp32p4
           idf.py build
           esptool.py --chip esp32p4 merge_bin -o dash_merged.bin --flash_mode qio --flash_size 16MB 0x2000 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/dash.bin
+      - name: Show PSRAM config
+        run: grep -E "CONFIG_SPIRAM_(SPEED|MODE|XIP|FETCH_INSTRUCTIONS|RODATA)|CONFIG_ESP32P4_DATA_CACHE" sdkconfig
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: nightly
