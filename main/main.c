@@ -4,49 +4,66 @@
 #include "lvgl.h"
 
 static const char *TAG = "DASH";
-static lv_obj_t *spd_arc, *rpm_arc, *spd_lbl, *rpm_lbl;
-static int spd = 0, rpm = 800;
-
-static void gauge_setup(lv_obj_t *arc, lv_align_t align, int32_t dx, int max) {
-    lv_arc_set_range(arc, 0, max);
-    lv_arc_set_value(arc, 0);
-    lv_obj_set_size(arc, 320, 320);
-    lv_obj_align(arc, align, dx, 0);
-    lv_obj_remove_style(arc, NULL, LV_PART_KNOB);
-    lv_obj_clear_flag(arc, LV_OBJ_FLAG_CLICKABLE);
-}
-
-static void ui_timer_cb(lv_timer_t *t) {
-    spd += (rand() % 9) - 4;
-    if (spd < 0) spd = 0;
-    if (spd > 220) spd = 220;
-    rpm += (rand() % 501) - 250;
-    if (rpm < 800) rpm = 800;
-    if (rpm > 7500) rpm = 7500;
-    bsp_display_lock(0);
-    lv_arc_set_value(spd_arc, spd);
-    lv_arc_set_value(rpm_arc, rpm / 100);
-    lv_label_set_text_fmt(spd_lbl, "%d", spd);
-    lv_label_set_text_fmt(rpm_lbl, "%d", rpm);
-    bsp_display_unlock();
-}
 
 void app_main(void) {
+    ESP_LOGI(TAG, "starting display...");
     bsp_display_start();
-    esp_err_t bl = bsp_display_backlight_on();
-    ESP_LOGI(TAG, "backlight_on: %s", esp_err_to_name(bl));
+    bsp_display_backlight_on();
+    ESP_LOGI(TAG, "display started, backlight on");
+
+    // ???????? ???????? ??????? LVGL
+    lv_display_t *disp = lv_display_get_default();
+    ESP_LOGI(TAG, "lv_display: %p, hres=%d, vres=%d",
+             (void*)disp,
+             disp ? lv_display_get_horizontal_resolution(disp) : -1,
+             disp ? lv_display_get_vertical_resolution(disp) : -1);
+
     bsp_display_lock(0);
-    lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0xff0000), 0);
-    lv_obj_set_style_bg_opa(lv_screen_active(), LV_OPA_COVER, 0);
-    spd_arc = lv_arc_create(lv_screen_active());
-    gauge_setup(spd_arc, LV_ALIGN_LEFT_MID, 60, 220);
-    rpm_arc = lv_arc_create(lv_screen_active());
-    gauge_setup(rpm_arc, LV_ALIGN_RIGHT_MID, -60, 75);
-    spd_lbl = lv_label_create(lv_screen_active());
-    lv_obj_align_to(spd_lbl, spd_arc, LV_ALIGN_CENTER, 0, 0);
-    rpm_lbl = lv_label_create(lv_screen_active());
-    lv_obj_align_to(rpm_lbl, rpm_arc, LV_ALIGN_CENTER, 0, 0);
-    lv_timer_create(ui_timer_cb, 100, NULL);
+    lv_obj_t *scr = lv_screen_active();
+    ESP_LOGI(TAG, "screen ptr: %p", (void*)scr);
+
+    // ??????? ??? ?? ???? ?????
+    lv_obj_set_style_bg_color(scr, lv_color_hex(0xff0000), 0);
+    lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
+    lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_invalidate(scr);
     bsp_display_unlock();
-    ESP_LOGI(TAG, "ui ready");
+    ESP_LOGI(TAG, "bg set to red, invalidated");
+
+    // ?????????????? refresh ? ?????
+    for (int i = 0; i < 20; i++) {
+        bsp_display_lock(0);
+        lv_timer_handler();
+        lv_refr_now(NULL);
+        bsp_display_unlock();
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+
+    ESP_LOGI(TAG, "refresh loop done");
+
+    // ??????? ????? ????? ? ?????? ??? ??????????? ??????
+    bsp_display_lock(0);
+    lv_obj_t *lbl = lv_label_create(scr);
+    lv_label_set_text(lbl, "DASH OK");
+    lv_obj_set_style_text_color(lbl, lv_color_white(), 0);
+    lv_obj_set_style_text_font(lbl, &lv_font_montserrat_48, 0);
+    lv_obj_center(lbl);
+    lv_obj_invalidate(scr);
+    bsp_display_unlock();
+
+    // ??? refresh
+    for (int i = 0; i < 10; i++) {
+        bsp_display_lock(0);
+        lv_timer_handler();
+        lv_refr_now(NULL);
+        bsp_display_unlock();
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+
+    ESP_LOGI(TAG, "label drawn, entering idle loop");
+
+    // ??????????? loop, ????? LVGL task ????????? ??????
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }
