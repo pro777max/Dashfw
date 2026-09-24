@@ -21,3 +21,4 @@ jobs:
           tag_name: nightly
           files: dash_merged.bin
           prerelease: true
+      - run: powershell ./patch_bsp.ps1
