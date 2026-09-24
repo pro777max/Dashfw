@@ -5,16 +5,14 @@
 #include "bsp/esp-bsp.h"
 #include "lvgl.h"
 
-static const char *TAG = "PWM2";
+static const char *TAG = "DIAG4";
 
 void app_main(void) {
     bsp_display_start();
     bsp_display_lock(0);
-    lv_obj_t *scr = lv_screen_active();
-    lv_obj_set_style_bg_color(scr, lv_color_hex(0x00ff00), 0);
-    lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(lv_screen_active(), lv_color_hex(0x00ff00), 0);
+    lv_obj_set_style_bg_opa(lv_screen_active(), LV_OPA_COVER, 0);
     bsp_display_unlock();
-    ESP_LOGI(TAG, "green fb ready");
 
     ledc_timer_config_t tc = {
         .speed_mode = LEDC_LOW_SPEED_MODE,
@@ -25,40 +23,30 @@ void app_main(void) {
     };
     ESP_ERROR_CHECK(ledc_timer_config(&tc));
 
-    const int pins[] = {26, 23, 24, 25, 28, 29, 30, 31, 32, 33,
-                        45, 46, 47, 48, 49, 50, 51, 52, 53, 54};
+    const int pins[] = {26, 23, 24, 25};
+    int prev = -1;
     for (size_t i = 0; i < sizeof(pins) / sizeof(pins[0]); i++) {
+        if (prev >= 0) {
+            gpio_reset_pin((gpio_num_t)prev);
+        }
         ledc_channel_config_t cc = {
             .gpio_num = pins[i],
             .speed_mode = LEDC_LOW_SPEED_MODE,
             .channel = LEDC_CHANNEL_1,
             .timer_sel = LEDC_TIMER_1,
             .intr_type = LEDC_INTR_DISABLE,
-            .duty = 200,
+            .duty = 128,
             .hpoint = 0,
         };
         esp_err_t r = ledc_channel_config(&cc);
-        ESP_LOGI(TAG, "PIN %d -> %s", pins[i], esp_err_to_name(r));
-        vTaskDelay(pdMS_TO_TICKS(2000));
+        ESP_LOGI(TAG, "TEST PIN %d -> %s (watch screen!)", pins[i], esp_err_to_name(r));
+        vTaskDelay(pdMS_TO_TICKS(2500));
+        prev = pins[i];
     }
-
-    const int freqs[] = {5000, 20000, 500};
-    for (size_t f = 0; f < 3; f++) {
-        ledc_set_freq(LEDC_LOW_SPEED_MODE, LEDC_TIMER_1, freqs[f]);
-        ledc_channel_config_t cc = {
-            .gpio_num = 26,
-            .speed_mode = LEDC_LOW_SPEED_MODE,
-            .channel = LEDC_CHANNEL_1,
-            .timer_sel = LEDC_TIMER_1,
-            .intr_type = LEDC_INTR_DISABLE,
-            .duty = 255,
-            .hpoint = 0,
-        };
-        ledc_channel_config(&cc);
-        ESP_LOGI(TAG, "PIN 26 freq %d Hz duty 255", freqs[f]);
-        vTaskDelay(pdMS_TO_TICKS(2000));
+    if (prev >= 0) {
+        gpio_reset_pin((gpio_num_t)prev);
     }
-    ESP_LOGI(TAG, "sweep2 done");
+    ESP_LOGI(TAG, "diag4 done, backlight OFF now");
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(2000));
     }
