@@ -4,7 +4,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: ESP-IDF Build
         uses: espressif/esp-idf-ci-action@v1
@@ -19,3 +19,16 @@ jobs:
             rm -f sdkconfig
             idf.py fullclean
             idf.py build
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dash_merged
+          path: build/dash_merged.bin
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          files: build/dash_merged.bin
+          prerelease: true
