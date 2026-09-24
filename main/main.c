@@ -15,6 +15,15 @@ void app_main(void) {
     ESP_LOGI(TAG, "Init Display via BSP...");
     lv_display_t *disp = bsp_display_start();
     
+    // КРИТИЧЕСКАЯ ПРОВЕРКА: если дисплей не инициализировался, останавливаемся и пишем в лог
+    if (disp == NULL) {
+        ESP_LOGE(TAG, "FATAL: bsp_display_start() returned NULL! Check sdkconfig for BSP_LCD_TYPE_1024_600=y");
+        while (1) {
+            vTaskDelay(pdMS_TO_TICKS(1000));
+        }
+    }
+    ESP_LOGI(TAG, "Display initialized successfully!");
+    
     // 2. ПРИНУДИТЕЛЬНО включаем подсветку на GPIO 23
     ESP_LOGI(TAG, "Forcing backlight GPIO 23 HIGH...");
     gpio_config_t io_conf = {
@@ -49,7 +58,7 @@ void app_main(void) {
     ESP_LOGI(TAG, "Forcing redraw...");
     lv_refr_now(disp);
     
-    ESP_LOGI(TAG, "If screen is RED, configuration is finally correct!");
+    ESP_LOGI(TAG, "If screen is RED, we WON!");
 
     // 6. Цикл жизни
     while (1) {
