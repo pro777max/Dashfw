@@ -6,7 +6,7 @@
 #include "lvgl.h"
 #include "bsp/esp-bsp.h"
 
-static const char *TAG = "DASH_EK79007";
+static const char *TAG = "DASH_FINAL";
 
 void app_main(void) {
     ESP_LOGI(TAG, "Starting EK79007 Final Test...");
@@ -26,6 +26,7 @@ void app_main(void) {
     };
     gpio_config(&io_conf);
     gpio_set_level(GPIO_NUM_23, 1);
+    ESP_LOGI(TAG, "Backlight forced ON");
 
     // 3. ???? ????? ?? ???????????? ????????????
     vTaskDelay(pdMS_TO_TICKS(300));
