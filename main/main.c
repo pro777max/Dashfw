@@ -14,6 +14,7 @@ static const char *TAG = "DASH_JD9165";
 static lv_display_t *lvgl_disp = NULL;
 static esp_lcd_panel_handle_t panel_handle = NULL;
 
+// ??????? ????????? ?????? ??? ????????? LVGL ?? ???????
 static void lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
     esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, px_map);
     lv_display_flush_ready(disp);
@@ -24,9 +25,9 @@ static void init_jd9165_display(void) {
     esp_lcd_dsi_bus_handle_t dsi_bus = NULL;
     esp_lcd_dsi_bus_config_t bus_config = {
         .bus_id = 0,
-        .num_data_lanes = 2,
+        .num_data_lanes = 2, // ?? ????????? ????????: MIPI_2lane
         .phy_clk_src = LCD_PHY_CLK_SRC_PLL_FPLL,
-        .lane_bit_rate_mbps = 1000,
+        .lane_bit_rate_mbps = 1000, // 1 Gbps ?? ?????
     };
     ESP_ERROR_CHECK(esp_lcd_new_dsi_bus(&bus_config, &dsi_bus));
 
@@ -44,15 +45,15 @@ static void init_jd9165_display(void) {
 
     ESP_LOGI(TAG, "Initializing JD9165 Panel...");
     esp_lcd_panel_dev_config_t panel_config = {
-        .reset_gpio_num = 27,
+        .reset_gpio_num = 27, // GPIO 27 ??? ?????? (?? ?????????? ?????)
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
-        .bits_per_pixel = 16,
+        .bits_per_pixel = 16, // RGB565
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_jd9165(io_handle, &panel_config, &panel_handle));
     
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
-    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
+    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true)); // ???????? ???????!
     ESP_LOGI(TAG, "JD9165 Panel Initialized and Turned ON!");
 }
 
@@ -60,6 +61,7 @@ static void init_lvgl(void) {
     ESP_LOGI(TAG, "Initializing LVGL...");
     lv_init();
 
+    // ??????? ????? ? PSRAM (1024 * 100 ???????? * 2 ????? = ~200 ??)
     size_t buffer_size = 1024 * 100 * sizeof(lv_color_t);
     lv_color_t *buf1 = heap_caps_malloc(buffer_size, MALLOC_CAP_SPIRAM);
     if (!buf1) {
@@ -90,11 +92,19 @@ static void force_backlight(void) {
 void app_main(void) {
     ESP_LOGI(TAG, "Starting JD9165 Manual Init Test...");
 
+    // 1. ?????????????? ??????? ??????? (?????????? ??????????!)
     init_jd9165_display();
+    
+    // 2. ???? ????? ?? ????????????
     vTaskDelay(pdMS_TO_TICKS(300));
+
+    // 3. ?????????????? LVGL
     init_lvgl();
+
+    // 4. ???????? ?????????
     force_backlight();
 
+    // 5. ?????? ????-??????? ?????
     ESP_LOGI(TAG, "Drawing RED screen...");
     lv_obj_t *scr = lv_screen_active();
     lv_obj_set_style_bg_color(scr, lv_color_hex(0xFF0000), 0);
@@ -107,9 +117,11 @@ void app_main(void) {
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
 
+    // 6. ?????????????? ???????????
     lv_refr_now(NULL);
     ESP_LOGI(TAG, "If you see RED, we conquered the hardware!");
 
+    // 7. ???? ?????
     while (1) {
         lv_timer_handler();
         vTaskDelay(pdMS_TO_TICKS(10));
