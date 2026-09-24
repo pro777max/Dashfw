@@ -13,35 +13,13 @@ jobs:
           target: esp32p4
           command: |
             git config --global --add safe.directory /__w/Dashfw/Dashfw
-            git rm --cached sdkconfig || true
-            chmod +x patch_bsp.sh
-            ./patch_bsp.sh
             rm -f sdkconfig
             idf.py fullclean
             idf.py build
-      
-      # Ищем все bin файлы после сборки
-      - name: Find built files
-        run: |
-          echo "Searching for built files..."
-          find . -name "*.bin" -type f
-          ls -la build/
-      
-      # Копируем главный bin файл
-      - name: Copy main binary
-        run: |
-          if [ -f "build/dash.bin" ]; then
-            cp build/dash.bin dash_merged.bin
-          elif [ -f "build/main/dash.bin" ]; then
-            cp build/main/dash.bin dash_merged.bin
-          else
-            # Ищем любой bin файл в build
-            find build -name "*.bin" -type f -exec cp {} dash_merged.bin \;
-          fi
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: dash_merged
-          path: dash_merged.bin
+          path: build/dash_merged.bin
           retention-days: 7
