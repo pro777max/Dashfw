@@ -1,5 +1,0 @@
-dependencies:
-  espressif/esp32_p4_function_ev_board: "^1.0.0"
-  espressif/esp_lcd_jd9165: "^1.0.0"
-  espressif/esp_lcd_touch_gt911: "^1.0.0"
-  lvgl/lvgl: "^9.0.0"
