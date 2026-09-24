@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -11,11 +11,11 @@ static const char *TAG = "DASH_FINAL";
 void app_main(void) {
     ESP_LOGI(TAG, "Starting EK79007 Final Test...");
 
-    // 1. ????????????? ????? BSP
+    // 1. Инициализация через BSP
     ESP_LOGI(TAG, "Init Display via BSP...");
     lv_display_t *disp = bsp_display_start();
     
-    // 2. ????????????? ???????? ????????? ?? GPIO 23
+    // 2. ПРИНУДИТЕЛЬНО включаем подсветку на GPIO 23
     ESP_LOGI(TAG, "Forcing backlight GPIO 23 HIGH...");
     gpio_config_t io_conf = {
         .pin_bit_mask = (1ULL << 23),
@@ -28,13 +28,13 @@ void app_main(void) {
     gpio_set_level(GPIO_NUM_23, 1);
     ESP_LOGI(TAG, "Backlight forced ON");
 
-    // 3. ???? ????? ?? ????????????
+    // 3. Даем время на стабилизацию
     vTaskDelay(pdMS_TO_TICKS(300));
 
-    // 4. ?????? ?????
+    // 4. Рисуем экран
     bsp_display_lock(0);
     lv_obj_t *scr = lv_screen_active();
-    lv_obj_set_style_bg_color(scr, lv_color_hex(0xFF0000), 0); // ????-???????
+    lv_obj_set_style_bg_color(scr, lv_color_hex(0xFF0000), 0); // ЯРКО-КРАСНЫЙ
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
     
     lv_obj_t *label = lv_label_create(scr);
@@ -45,13 +45,13 @@ void app_main(void) {
     lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
     bsp_display_unlock();
     
-    // 5. ?????????????? ???????????
+    // 5. Принудительная перерисовка
     ESP_LOGI(TAG, "Forcing redraw...");
     lv_refr_now(disp);
     
     ESP_LOGI(TAG, "If screen is RED, configuration is finally correct!");
 
-    // 6. ???? ?????
+    // 6. Цикл жизни
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));
         ESP_LOGI(TAG, "System Alive");
