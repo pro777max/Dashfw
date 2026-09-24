@@ -17,6 +17,9 @@ jobs:
             idf.py fullclean
             idf.py build
       
+      - name: Install esptool
+        run: pip install esptool
+      
       - name: Create merged binary
         run: |
           cd build
