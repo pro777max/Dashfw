@@ -25,10 +25,4 @@ jobs:
         with:
           name: dash_merged
           path: build/dash_merged.bin
-      
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: nightly
-          files: build/dash_merged.bin
-          prerelease: true
+          retention-days: 7
