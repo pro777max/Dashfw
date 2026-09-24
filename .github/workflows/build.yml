@@ -15,4 +15,5 @@ jobs:
             git config --global --add safe.directory /__w/Dashfw/Dashfw
             chmod +x patch_bsp.sh
             ./patch_bsp.sh
+            idf.py fullclean
             idf.py build

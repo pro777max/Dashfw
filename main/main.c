@@ -6,12 +6,11 @@
 #include "lvgl.h"
 #include "bsp/esp-bsp.h"
 
-static const char *TAG = "DASH_PATCHED";
+static const char *TAG = "DASH_FINAL";
 
 void app_main(void) {
-    ESP_LOGI(TAG, "Starting Patched EK79007 Test...");
+    ESP_LOGI(TAG, "Starting Forced EK79007 Test...");
 
-    // 1. Инициализация через BSP (теперь он обязан выбрать EK79007 благодаря патчу)
     ESP_LOGI(TAG, "Init Display via BSP...");
     lv_display_t *disp = bsp_display_start();
     
@@ -21,7 +20,6 @@ void app_main(void) {
     }
     ESP_LOGI(TAG, "Display initialized!");
     
-    // 2. Подсветка на GPIO 23
     gpio_config_t io_conf = {
         .pin_bit_mask = (1ULL << 23),
         .mode = GPIO_MODE_OUTPUT,
@@ -33,14 +31,13 @@ void app_main(void) {
     gpio_set_level(GPIO_NUM_23, 1);
     ESP_LOGI(TAG, "Backlight ON (GPIO 23)");
 
-    // 3. Рисуем экран
     bsp_display_lock(0);
     lv_obj_t *scr = lv_screen_active();
-    lv_obj_set_style_bg_color(scr, lv_color_hex(0xFF0000), 0); // КРАСНЫЙ
+    lv_obj_set_style_bg_color(scr, lv_color_hex(0xFF0000), 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
     
     lv_obj_t *label = lv_label_create(scr);
-    lv_label_set_text(label, "PATCHED\nEK79007\nWORKS!");
+    lv_label_set_text(label, "FORCED\nEK79007\nWORKS!");
     lv_obj_set_style_text_color(label, lv_color_white(), 0);
     lv_obj_set_style_text_font(label, &lv_font_montserrat_14, 0);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
