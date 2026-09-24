@@ -1,10 +1,9 @@
-#include <stdlib.h>
+#include <stdio.h>
 #include "esp_log.h"
-#include "driver/gpio.h"
 #include "bsp/esp-bsp.h"
-#include "lvgl.h"
+#include "driver/i2c_master.h"
 
-static const char *TAG = "DIAG";
+static const char *TAG = "I2C_SCAN";
 
 void app_main(void) {
     bsp_display_start();
@@ -13,26 +12,21 @@ void app_main(void) {
     lv_obj_set_style_bg_color(scr, lv_color_hex(0x00ff00), 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
     bsp_display_unlock();
-    ESP_LOGI(TAG, "green fb ready, sweep start");
-
-    const int pins[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,
-                        21,22,23,24,25,26,27,28,29,30,31,32,33,
-                        45,46,47,48,49,50,51,52,53,54};
-    for (size_t i = 0; i < sizeof(pins) / sizeof(pins[0]); i++) {
-        gpio_num_t p = (gpio_num_t)pins[i];
-        gpio_reset_pin(p);
-        gpio_set_direction(p, GPIO_MODE_OUTPUT);
-        gpio_set_level(p, 1);
-        ESP_LOGI(TAG, "PIN %d HIGH", pins[i]);
-        vTaskDelay(pdMS_TO_TICKS(1500));
-        gpio_set_level(p, 0);
+    
+    bsp_i2c_init();
+    i2c_master_bus_handle_t bus;
+    bsp_i2c_get_handle(&bus);
+    
+    ESP_LOGI(TAG, "Scanning I2C bus 0x01-0x7F...");
+    for (uint8_t addr = 1; addr < 128; addr++) {
+        esp_err_t ret = i2c_master_probe(bus, addr, 100);
+        if (ret == ESP_OK) {
+            ESP_LOGI(TAG, "Found device at 0x%02X", addr);
+        }
     }
-    ESP_LOGI(TAG, "sweep done");
-
-    int n = 0;
+    ESP_LOGI(TAG, "Scan complete");
+    
     while (1) {
-        n++;
-        ESP_LOGI(TAG, "ALIVE %d", n);
-        vTaskDelay(pdMS_TO_TICKS(2000));
+        vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }
