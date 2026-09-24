@@ -1,10 +1,11 @@
 #include <stdlib.h>
 #include "esp_log.h"
 #include "driver/ledc.h"
+#include "driver/gpio.h"
 #include "bsp/esp-bsp.h"
 #include "lvgl.h"
 
-static const char *TAG = "PWM_SWEEP";
+static const char *TAG = "PWM2";
 
 void app_main(void) {
     bsp_display_start();
@@ -24,9 +25,8 @@ void app_main(void) {
     };
     ESP_ERROR_CHECK(ledc_timer_config(&tc));
 
-    const int pins[] = {0,1,2,3,4,5, 9,10,11,12,13,14,15,16,17,18,19,20,
-                        21,22,23,24,25,26,27,28,29,30,31,32,33,
-                        45,46,47,48,49,50,51,52,53,54};
+    const int pins[] = {26, 23, 24, 25, 28, 29, 30, 31, 32, 33,
+                        45, 46, 47, 48, 49, 50, 51, 52, 53, 54};
     for (size_t i = 0; i < sizeof(pins) / sizeof(pins[0]); i++) {
         ledc_channel_config_t cc = {
             .gpio_num = pins[i],
@@ -34,14 +34,31 @@ void app_main(void) {
             .channel = LEDC_CHANNEL_1,
             .timer_sel = LEDC_TIMER_1,
             .intr_type = LEDC_INTR_DISABLE,
-            .duty = 128,
+            .duty = 200,
             .hpoint = 0,
         };
         esp_err_t r = ledc_channel_config(&cc);
-        ESP_LOGI(TAG, "LEDC PIN %d -> %s", pins[i], esp_err_to_name(r));
-        vTaskDelay(pdMS_TO_TICKS(1500));
+        ESP_LOGI(TAG, "PIN %d -> %s", pins[i], esp_err_to_name(r));
+        vTaskDelay(pdMS_TO_TICKS(2000));
     }
-    ESP_LOGI(TAG, "pwm sweep done");
+
+    const int freqs[] = {5000, 20000, 500};
+    for (size_t f = 0; f < 3; f++) {
+        ledc_set_freq(LEDC_LOW_SPEED_MODE, LEDC_TIMER_1, freqs[f]);
+        ledc_channel_config_t cc = {
+            .gpio_num = 26,
+            .speed_mode = LEDC_LOW_SPEED_MODE,
+            .channel = LEDC_CHANNEL_1,
+            .timer_sel = LEDC_TIMER_1,
+            .intr_type = LEDC_INTR_DISABLE,
+            .duty = 255,
+            .hpoint = 0,
+        };
+        ledc_channel_config(&cc);
+        ESP_LOGI(TAG, "PIN 26 freq %d Hz duty 255", freqs[f]);
+        vTaskDelay(pdMS_TO_TICKS(2000));
+    }
+    ESP_LOGI(TAG, "sweep2 done");
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(2000));
     }
