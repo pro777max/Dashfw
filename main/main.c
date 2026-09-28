@@ -13,7 +13,7 @@ static lv_obj_t *arc1, *arc2, *label1, *label2;
 static void i2c_bus_recovery(void) {
     const int pins[] = {8, 22};
     for (int p = 0; p < 2; p++) {
-        gpio_set_pullup((gpio_num_t)pins[p], true);
+        gpio_set_pull_mode((gpio_num_t)pins[p], GPIO_PULLUP_ONLY);
         gpio_set_direction((gpio_num_t)pins[p], GPIO_MODE_OUTPUT_OD);
         for (int i = 0; i < 9; i++) {
             gpio_set_level((gpio_num_t)pins[p], 0);
