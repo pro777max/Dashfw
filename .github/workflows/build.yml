@@ -19,9 +19,17 @@ jobs:
             esptool.py --chip esp32p4 merge_bin -o dash_merged.bin --flash_mode qio --flash_freq 80m --flash_size 16MB 0x2000 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/dash.bin
       - name: Dump BSP config
         run: |
-          grep -nE "config BSP_(LCD|TOUCH|BACKLIGHT|DISPLAY)" managed_components/espressif__esp32_p4_function_ev_board/Kconfig || true
-          grep -E "BSP_(LCD|TOUCH|BACKLIGHT|DISPLAY)" sdkconfig || true
-          grep -A2 "espressif/esp32_p4_function_ev_board" dependencies.lock || true
+          B=managed_components/espressif__esp32_p4_function_ev_board
+          echo === KCONFIG ===
+          cat $B/Kconfig || true
+          echo === VERSION ===
+          cat $B/idf_component.yml || true
+          echo === PANEL SELECT IN C ===
+          grep -nE "ili9881c|ek79007|CONFIG_BSP|BOARD_" $B/esp32_p4_function_ev_board.c | head -60 || true
+          echo === HEADERS ===
+          ls $B/include/bsp || true
+          echo === SDKCONFIG BSP ===
+          grep -E "^CONFIG_BSP" sdkconfig || true
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
