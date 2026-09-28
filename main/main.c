@@ -50,7 +50,7 @@ void app_main(void) {
     };
     ESP_ERROR_CHECK(ledc_channel_config(&c));
 
-    ESP_LOGI(TAG, "display start");
+    ESP_LOGI(TAG, "display start (NO TOUCH)");
     bsp_display_start();
     bsp_display_lock(0);
     lv_obj_t *scr = lv_screen_active();
@@ -66,8 +66,7 @@ void app_main(void) {
     lv_obj_set_style_arc_width(arc1, 26, LV_PART_MAIN | LV_PART_INDICATOR);
     lv_obj_set_style_arc_color(arc1, lv_color_hex(0x222222), LV_PART_MAIN);
     lv_obj_set_style_arc_color(arc1, lv_color_hex(0x00c8ff), LV_PART_INDICATOR);
-    lv_obj_remove_flag(arc1, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_remove_style(arc1, NULL, LV_PART_KNOB);
+    lv_obj_set_hidden(arc1, false);
     label1 = lv_label_create(scr);
     lv_label_set_text(label1, "0 km/h");
     lv_obj_set_style_text_color(label1, lv_color_white(), 0);
@@ -82,8 +81,7 @@ void app_main(void) {
     lv_obj_set_style_arc_width(arc2, 26, LV_PART_MAIN | LV_PART_INDICATOR);
     lv_obj_set_style_arc_color(arc2, lv_color_hex(0x222222), LV_PART_MAIN);
     lv_obj_set_style_arc_color(arc2, lv_color_hex(0xff3b30), LV_PART_INDICATOR);
-    lv_obj_remove_flag(arc2, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_remove_style(arc2, NULL, LV_PART_KNOB);
+    lv_obj_set_hidden(arc2, false);
     label2 = lv_label_create(scr);
     lv_label_set_text(label2, "0 x100 rpm");
     lv_obj_set_style_text_color(label2, lv_color_white(), 0);
