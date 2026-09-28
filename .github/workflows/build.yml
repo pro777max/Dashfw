@@ -1,11 +1,12 @@
-﻿name: Build ESP32-P4
+name: Build ESP32-P4
 on: [push]
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
       - name: ESP-IDF Build
         uses: espressif/esp-idf-ci-action@v1
         with:
@@ -16,18 +17,20 @@ jobs:
             rm -f sdkconfig
             idf.py fullclean
             idf.py build
-      
       - name: Install esptool
         run: pip install esptool
-      
       - name: Create merged binary
         run: |
           cd build
           esptool.py --chip esp32p4 merge_bin -o dash_merged.bin --flash_mode dio --flash_freq 80m --flash_size 16MB 0x0 bootloader/bootloader.bin 0x8000 partition_table/partition-table.bin 0x10000 dash.bin
-      
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: dash_merged
           path: build/dash_merged.bin
           retention-days: 7
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          files: build/dash_merged.bin
+          prerelease: true
