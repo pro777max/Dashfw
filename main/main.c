@@ -3,6 +3,7 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "lvgl.h"
 #include "bsp/esp-bsp.h"
 
@@ -22,6 +23,7 @@ static void i2c_bus_recovery(void) {
         }
         gpio_set_direction((gpio_num_t)pins[p], GPIO_MODE_INPUT);
     }
+    vTaskDelay(pdMS_TO_TICKS(500));
     ESP_LOGI(TAG, "i2c bus recovery done");
 }
 
@@ -29,10 +31,28 @@ void app_main(void) {
     ESP_LOGI(TAG, "boot: i2c recovery first");
     i2c_bus_recovery();
 
+    ESP_LOGI(TAG, "backlight gpio23 on ledc ch2");
+    ledc_timer_config_t t = {
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .timer_num = LEDC_TIMER_2,
+        .duty_resolution = LEDC_TIMER_10_BIT,
+        .freq_hz = 5000,
+        .clk_cfg = LEDC_AUTO_CLK,
+    };
+    ESP_ERROR_CHECK(ledc_timer_config(&t));
+    ledc_channel_config_t c = {
+        .gpio_num = 23,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .channel = LEDC_CHANNEL_2,
+        .timer_sel = LEDC_TIMER_2,
+        .intr_type = LEDC_INTR_DISABLE,
+        .duty = 1023,
+        .hpoint = 0,
+    };
+    ESP_ERROR_CHECK(ledc_channel_config(&c));
+
     ESP_LOGI(TAG, "display start");
     bsp_display_start();
-    esp_err_t bl = bsp_display_backlight_on();
-    ESP_LOGI(TAG, "backlight_on: %s", esp_err_to_name(bl));
 
     bsp_display_lock(0);
     lv_obj_t *scr = lv_screen_active();
