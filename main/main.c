@@ -2,7 +2,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
-#include "driver/ledc.h"
 #include "driver/gpio.h"
 #include "lvgl.h"
 #include "bsp/esp-bsp.h"
@@ -30,28 +29,11 @@ void app_main(void) {
     ESP_LOGI(TAG, "boot: i2c recovery first");
     i2c_bus_recovery();
 
-    ESP_LOGI(TAG, "backlight on GPIO23");
-    ledc_timer_config_t t = {
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_num = LEDC_TIMER_1,
-        .duty_resolution = LEDC_TIMER_10_BIT,
-        .freq_hz = 5000,
-        .clk_cfg = LEDC_AUTO_CLK,
-    };
-    ESP_ERROR_CHECK(ledc_timer_config(&t));
-    ledc_channel_config_t c = {
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .channel = LEDC_CHANNEL_1,
-        .timer_sel = LEDC_TIMER_1,
-        .intr_type = LEDC_INTR_DISABLE,
-        .gpio_num = 23,
-        .duty = 1023,
-        .hpoint = 0,
-    };
-    ESP_ERROR_CHECK(ledc_channel_config(&c));
-
-    ESP_LOGI(TAG, "display start (NO TOUCH)");
+    ESP_LOGI(TAG, "display start");
     bsp_display_start();
+    esp_err_t bl = bsp_display_backlight_on();
+    ESP_LOGI(TAG, "backlight_on: %s", esp_err_to_name(bl));
+
     bsp_display_lock(0);
     lv_obj_t *scr = lv_screen_active();
     lv_obj_set_style_bg_color(scr, lv_color_black(), 0);
@@ -66,7 +48,8 @@ void app_main(void) {
     lv_obj_set_style_arc_width(arc1, 26, LV_PART_MAIN | LV_PART_INDICATOR);
     lv_obj_set_style_arc_color(arc1, lv_color_hex(0x222222), LV_PART_MAIN);
     lv_obj_set_style_arc_color(arc1, lv_color_hex(0x00c8ff), LV_PART_INDICATOR);
-    lv_obj_set_hidden(arc1, false);
+    lv_obj_clear_flag(arc1, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_remove_style(arc1, NULL, LV_PART_KNOB);
     label1 = lv_label_create(scr);
     lv_label_set_text(label1, "0 km/h");
     lv_obj_set_style_text_color(label1, lv_color_white(), 0);
@@ -81,7 +64,8 @@ void app_main(void) {
     lv_obj_set_style_arc_width(arc2, 26, LV_PART_MAIN | LV_PART_INDICATOR);
     lv_obj_set_style_arc_color(arc2, lv_color_hex(0x222222), LV_PART_MAIN);
     lv_obj_set_style_arc_color(arc2, lv_color_hex(0xff3b30), LV_PART_INDICATOR);
-    lv_obj_set_hidden(arc2, false);
+    lv_obj_clear_flag(arc2, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_remove_style(arc2, NULL, LV_PART_KNOB);
     label2 = lv_label_create(scr);
     lv_label_set_text(label2, "0 x100 rpm");
     lv_obj_set_style_text_color(label2, lv_color_white(), 0);
