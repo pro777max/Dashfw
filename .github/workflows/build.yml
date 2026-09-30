@@ -15,8 +15,6 @@ jobs:
           command: |
             git config --global --add safe.directory /__w/Dashfw/Dashfw
             rm -f sdkconfig
-            idf.py reconfigure
-            sed -i '/\.mipi_dsi = true,/d' managed_components/espressif__esp32_p4_function_ev_board/esp32_p4_function_ev_board.c
             idf.py build
             esptool.py --chip esp32p4 merge_bin -o dash_merged.bin --flash_mode qio --flash_freq 80m --flash_size 16MB 0x2000 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/dash.bin
       - name: Upload artifact
