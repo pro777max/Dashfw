@@ -31,7 +31,7 @@ void app_main(void) {
     ESP_LOGI(TAG, "boot: i2c recovery first");
     i2c_bus_recovery();
 
-    ESP_LOGI(TAG, "backlight gpio23 on ledc ch2");
+    ESP_LOGI(TAG, "backlight gpio23: 1kHz, 80%%");
     ledc_timer_config_t t = {
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .timer_num = LEDC_TIMER_2,
