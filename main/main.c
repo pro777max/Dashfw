@@ -6,7 +6,6 @@
 #include "driver/ledc.h"
 #include "lvgl.h"
 #include "bsp/esp-bsp.h"
-#include "esp_lvgl_port.h"
 
 static const char *TAG = "DASH";
 static lv_obj_t *arc1, *arc2, *label1, *label2;
@@ -54,57 +53,47 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "display start");
     bsp_display_start();
-    ESP_LOGI(TAG, "display started");
+    ESP_LOGI(TAG, "display started OK");
 
-    if (lvgl_port_lock(0)) {
-        ESP_LOGI(TAG, "lvgl_port_lock OK");
-        lv_obj_t *scr = lv_screen_active();
-        lv_obj_set_style_bg_color(scr, lv_color_black(), 0);
-        lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
-        ESP_LOGI(TAG, "bg set");
+    bsp_display_lock(0);
+    lv_obj_t *scr = lv_screen_active();
+    lv_obj_set_style_bg_color(scr, lv_color_black(), 0);
+    lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
 
-        arc1 = lv_arc_create(scr);
-        lv_obj_set_size(arc1, 380, 380);
-        lv_obj_align(arc1, LV_ALIGN_LEFT_MID, 40, 0);
-        lv_arc_set_rotation(arc1, 135);
-        lv_arc_set_range(arc1, 0, 240);
-        lv_arc_set_value(arc1, 120);
-        lv_obj_set_style_arc_width(arc1, 26, LV_PART_MAIN | LV_PART_INDICATOR);
-        lv_obj_set_style_arc_color(arc1, lv_color_hex(0x222222), LV_PART_MAIN);
-        lv_obj_set_style_arc_color(arc1, lv_color_hex(0x00c8ff), LV_PART_INDICATOR);
-        lv_obj_clear_flag(arc1, LV_OBJ_FLAG_CLICKABLE);
-        lv_obj_remove_style(arc1, NULL, LV_PART_KNOB);
-        ESP_LOGI(TAG, "arc1 created");
+    arc1 = lv_arc_create(scr);
+    lv_obj_set_size(arc1, 380, 380);
+    lv_obj_align(arc1, LV_ALIGN_LEFT_MID, 40, 0);
+    lv_arc_set_rotation(arc1, 135);
+    lv_arc_set_range(arc1, 0, 240);
+    lv_arc_set_value(arc1, 120);
+    lv_obj_set_style_arc_width(arc1, 26, LV_PART_MAIN | LV_PART_INDICATOR);
+    lv_obj_set_style_arc_color(arc1, lv_color_hex(0x222222), LV_PART_MAIN);
+    lv_obj_set_style_arc_color(arc1, lv_color_hex(0x00c8ff), LV_PART_INDICATOR);
+    lv_obj_remove_flag(arc1, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_remove_style(arc1, NULL, LV_PART_KNOB);
+    label1 = lv_label_create(scr);
+    lv_label_set_text(label1, "120 km/h");
+    lv_obj_set_style_text_color(label1, lv_color_white(), 0);
+    lv_obj_align_to(label1, arc1, LV_ALIGN_CENTER, 0, 0);
 
-        label1 = lv_label_create(scr);
-        lv_label_set_text(label1, "120 km/h");
-        lv_obj_set_style_text_color(label1, lv_color_white(), 0);
-        lv_obj_align_to(label1, arc1, LV_ALIGN_CENTER, 0, 0);
+    arc2 = lv_arc_create(scr);
+    lv_obj_set_size(arc2, 380, 380);
+    lv_obj_align(arc2, LV_ALIGN_RIGHT_MID, -40, 0);
+    lv_arc_set_rotation(arc2, 135);
+    lv_arc_set_range(arc2, 0, 80);
+    lv_arc_set_value(arc2, 40);
+    lv_obj_set_style_arc_width(arc2, 26, LV_PART_MAIN | LV_PART_INDICATOR);
+    lv_obj_set_style_arc_color(arc2, lv_color_hex(0x222222), LV_PART_MAIN);
+    lv_obj_set_style_arc_color(arc2, lv_color_hex(0xff3b30), LV_PART_INDICATOR);
+    lv_obj_remove_flag(arc2, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_remove_style(arc2, NULL, LV_PART_KNOB);
+    label2 = lv_label_create(scr);
+    lv_label_set_text(label2, "40 x100 rpm");
+    lv_obj_set_style_text_color(label2, lv_color_white(), 0);
+    lv_obj_align_to(label2, arc2, LV_ALIGN_CENTER, 0, 0);
 
-        arc2 = lv_arc_create(scr);
-        lv_obj_set_size(arc2, 380, 380);
-        lv_obj_align(arc2, LV_ALIGN_RIGHT_MID, -40, 0);
-        lv_arc_set_rotation(arc2, 135);
-        lv_arc_set_range(arc2, 0, 80);
-        lv_arc_set_value(arc2, 40);
-        lv_obj_set_style_arc_width(arc2, 26, LV_PART_MAIN | LV_PART_INDICATOR);
-        lv_obj_set_style_arc_color(arc2, lv_color_hex(0x222222), LV_PART_MAIN);
-        lv_obj_set_style_arc_color(arc2, lv_color_hex(0xff3b30), LV_PART_INDICATOR);
-        lv_obj_clear_flag(arc2, LV_OBJ_FLAG_CLICKABLE);
-        lv_obj_remove_style(arc2, NULL, LV_PART_KNOB);
-        ESP_LOGI(TAG, "arc2 created");
-
-        label2 = lv_label_create(scr);
-        lv_label_set_text(label2, "40 x100 rpm");
-        lv_obj_set_style_text_color(label2, lv_color_white(), 0);
-        lv_obj_align_to(label2, arc2, LV_ALIGN_CENTER, 0, 0);
-
-        lv_refr_now(NULL);
-        lvgl_port_unlock();
-        ESP_LOGI(TAG, "ui ready");
-    } else {
-        ESP_LOGE(TAG, "lvgl_port_lock FAILED!");
-    }
+    bsp_display_unlock();
+    ESP_LOGI(TAG, "ui ready");
 
     int spd = 120, rpm = 40, dir = 1;
     while (1) {
@@ -114,12 +103,12 @@ void app_main(void) {
         if (spd <= 0) dir = 1;
         if (rpm > 80) rpm = 80;
         if (rpm < 8) rpm = 8;
-        if (lvgl_port_lock(0)) {
+        if (bsp_display_lock(0)) {
             lv_arc_set_value(arc1, spd);
             lv_arc_set_value(arc2, rpm);
             lv_label_set_text_fmt(label1, "%d km/h", spd);
             lv_label_set_text_fmt(label2, "%d x100 rpm", rpm);
-            lvgl_port_unlock();
+            bsp_display_unlock();
         }
         vTaskDelay(pdMS_TO_TICKS(80));
     }

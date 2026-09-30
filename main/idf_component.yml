@@ -1,5 +1,7 @@
 dependencies:
-  espressif/esp32_p4_function_ev_board:
-    version: "==5.2.3"
+  esp32_p4_function_ev_board:
+    git: https://github.com/espressif/esp-bsp.git
+    path: bsp/esp32_p4_function_ev_board
+    version: e13e17e6b0b1809acfb1d3c1fc346dd1e1675725
   lvgl/lvgl:
     version: ">=9,<10"
