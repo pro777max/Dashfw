@@ -36,7 +36,7 @@ void app_main(void) {
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .timer_num = LEDC_TIMER_2,
         .duty_resolution = LEDC_TIMER_10_BIT,
-        .freq_hz = 5000,
+        .freq_hz = 1000,
         .clk_cfg = LEDC_AUTO_CLK,
     };
     ESP_ERROR_CHECK(ledc_timer_config(&t));
@@ -46,7 +46,7 @@ void app_main(void) {
         .channel = LEDC_CHANNEL_2,
         .timer_sel = LEDC_TIMER_2,
         .intr_type = LEDC_INTR_DISABLE,
-        .duty = 1023,
+        .duty = 819,
         .hpoint = 0,
     };
     ESP_ERROR_CHECK(ledc_channel_config(&c));
