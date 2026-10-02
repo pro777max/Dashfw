@@ -28,7 +28,6 @@ static const char *TAG = "DASH";
 
 static esp_lcd_panel_handle_t panel_handle = NULL;
 static esp_lcd_touch_handle_t tp_handle = NULL;
-static lv_obj_t *box_obj = NULL;
 
 static void backlight_init(void) {
     ledc_timer_config_t t = {
@@ -45,7 +44,7 @@ static void backlight_init(void) {
         .channel = LEDC_CHANNEL_2,
         .timer_sel = LEDC_TIMER_2,
         .intr_type = LEDC_INTR_DISABLE,
-        .duty = 819,
+        .duty = 819, // 80%
         .hpoint = 0,
     };
     ESP_ERROR_CHECK(ledc_channel_config(&c));
@@ -68,7 +67,8 @@ static esp_err_t display_init(void) {
     ESP_RETURN_ON_ERROR(esp_lcd_new_panel_io_dbi(dsi_bus, &dbi_cfg, &dbi_io), TAG, "DBI IO failed");
 
     esp_lcd_dpi_panel_config_t dpi_cfg = JD9165_1024_600_PANEL_60HZ_DPI_CONFIG(LCD_COLOR_PIXEL_FORMAT_RGB565);
-    dpi_cfg.dpi_clock_freq_mhz = 40;
+    // ??????? ???????, ????? ???????? underrun ??? ?????? ? PSRAM
+    dpi_cfg.dpi_clock_freq_mhz = 40; 
 
     jd9165_vendor_config_t vendor_cfg = {
         .init_cmds = NULL,
@@ -111,6 +111,7 @@ static esp_err_t touch_init(void) {
     esp_lcd_panel_io_handle_t tp_io = NULL;
     esp_lcd_panel_io_i2c_config_t io_cfg = ESP_LCD_TOUCH_IO_I2C_GT911_CONFIG();
     io_cfg.dev_addr = 0x5D;
+    io_cfg.scl_speed_hz = 400000;
     ESP_RETURN_ON_ERROR(esp_lcd_new_panel_io_i2c(i2c_bus, &io_cfg, &tp_io), TAG, "Touch IO failed");
 
     static const esp_lcd_touch_io_gt911_config_t gt911_cfg = { .dev_addr = 0x5D };
@@ -135,11 +136,12 @@ static void touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data) {
         return;
     }
     esp_lcd_touch_read_data(tp_handle);
-
+    
     esp_lcd_touch_point_data_t pts[1];
     uint8_t touch_cnt = 0;
+    // ?????????? ?????????? API ?????? ??????????? esp_lcd_touch_get_coordinates
     bool pressed = esp_lcd_touch_get_data(tp_handle, pts, &touch_cnt, 1);
-
+    
     if (pressed && touch_cnt > 0) {
         data->point.x = pts[0].x;
         data->point.y = pts[0].y;
@@ -149,6 +151,7 @@ static void touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data) {
     }
 }
 
+// ?????????? C-?????? ??? ????????? ??????? (?????? C++ ??????)
 static void box_click_cb(lv_event_t *e) {
     ESP_LOGI(TAG, "TOUCH DETECTED ON BOX!");
     lv_obj_set_style_bg_color(lv_event_get_target(e), lv_color_hex(0xff0000), 0);
@@ -159,7 +162,9 @@ static void flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
     lv_display_flush_ready(disp);
 }
 
-static void tick_cb(void *arg) { lv_tick_inc(2); }
+static void tick_cb(void *arg) { 
+    lv_tick_inc(2); 
+}
 
 static void lvgl_task(void *arg) {
     while (1) {
@@ -174,6 +179,7 @@ void app_main(void) {
 
     backlight_init();
     ESP_ERROR_CHECK(display_init());
+    
     esp_err_t tp_err = touch_init();
     if (tp_err != ESP_OK) {
         ESP_LOGW(TAG, "Touch init failed: %s (continuing without touch)", esp_err_to_name(tp_err));
@@ -206,18 +212,19 @@ void app_main(void) {
     lv_obj_set_style_bg_color(scr, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
 
-    box_obj = lv_obj_create(scr);
-    lv_obj_set_size(box_obj, 500, 150);
-    lv_obj_center(box_obj);
-    lv_obj_set_style_bg_color(box_obj, lv_color_hex(0x00cc00), 0);
-    lv_obj_set_style_bg_opa(box_obj, LV_OPA_COVER, 0);
+    lv_obj_t *box = lv_obj_create(scr);
+    lv_obj_set_size(box, 500, 150);
+    lv_obj_center(box);
+    lv_obj_set_style_bg_color(box, lv_color_hex(0x00cc00), 0); // ??????? ?? ?????????
+    lv_obj_set_style_bg_opa(box, LV_OPA_COVER, 0);
 
-    lv_obj_t *label = lv_label_create(box_obj);
+    lv_obj_t *label = lv_label_create(box);
     lv_label_set_text(label, "DASH WORKS!\nTouch to test");
     lv_obj_set_style_text_color(label, lv_color_black(), 0);
     lv_obj_center(label);
 
-    lv_obj_add_event_cb(box_obj, box_click_cb, LV_EVENT_CLICKED, NULL);
+    // ???????????? C-??????? ??? ?????????? ???????
+    lv_obj_add_event_cb(box, box_click_cb, LV_EVENT_CLICKED, NULL);
 
     ESP_LOGI(TAG, "UI drawn, starting LVGL task");
     xTaskCreatePinnedToCore(lvgl_task, "lvgl", 8192, NULL, 5, NULL, 0);
