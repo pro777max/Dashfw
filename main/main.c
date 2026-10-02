@@ -174,7 +174,7 @@ static void touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data) {
 
 static void tick_cb(void *arg) { lv_tick_inc(2); }
 
-/* Event callbacks (?????? C, ??? ?????) */
+/* Event callbacks */
 static void tach_click_cb(lv_event_t *e) {
     ESP_LOGI(TAG, "Tach clicked");
     lv_anim_t a;
@@ -285,27 +285,28 @@ static void create_dashboard(void) {
     lv_obj_t *scr = lv_screen_active();
     lv_obj_set_style_bg_color(scr, lv_color_hex(0x0a0a0a), 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
+    lv_obj_set_scroll_dir(scr, LV_DIR_NONE);  /* ??????? ?????? ????????? */
 
     /* Top bar: time, date, odometer */
     lbl_time = lv_label_create(scr);
     lv_obj_set_style_text_color(lbl_time, lv_color_white(), 0);
-    lv_obj_set_style_text_font(lbl_time, &lv_font_montserrat_36, 0);
-    lv_obj_align(lbl_time, LV_ALIGN_TOP_LEFT, 20, 10);
+    lv_obj_set_style_text_font(lbl_time, &lv_font_montserrat_24, 0);
+    lv_obj_align(lbl_time, LV_ALIGN_TOP_LEFT, 10, 5);
 
     lbl_date = lv_label_create(scr);
     lv_obj_set_style_text_color(lbl_date, lv_color_hex(0xaaaaaa), 0);
     lv_obj_set_style_text_font(lbl_date, &lv_font_montserrat_14, 0);
-    lv_obj_align_to(lbl_date, lbl_time, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 5);
+    lv_obj_align_to(lbl_date, lbl_time, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 2);
 
     lbl_odometer = lv_label_create(scr);
     lv_obj_set_style_text_color(lbl_odometer, lv_color_white(), 0);
-    lv_obj_set_style_text_font(lbl_odometer, &lv_font_montserrat_24, 0);
-    lv_obj_align(lbl_odometer, LV_ALIGN_TOP_RIGHT, -20, 20);
+    lv_obj_set_style_text_font(lbl_odometer, &lv_font_montserrat_20, 0);
+    lv_obj_align(lbl_odometer, LV_ALIGN_TOP_RIGHT, -10, 10);
 
     /* Bottom info bar */
     lv_obj_t *info_bar = lv_obj_create(scr);
-    lv_obj_set_size(info_bar, 600, 50);
-    lv_obj_align(info_bar, LV_ALIGN_BOTTOM_MID, 0, -10);
+    lv_obj_set_size(info_bar, 500, 45);
+    lv_obj_align(info_bar, LV_ALIGN_BOTTOM_MID, 0, -5);
     lv_obj_set_style_bg_color(info_bar, lv_color_hex(0x1a1a1a), 0);
     lv_obj_set_style_radius(info_bar, 10, 0);
     lv_obj_set_flex_flow(info_bar, LV_FLEX_FLOW_ROW);
@@ -324,15 +325,15 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_color(lbl_volt, lv_color_hex(0x4488ff), 0);
     lv_obj_set_style_text_font(lbl_volt, &lv_font_montserrat_14, 0);
 
-    /* Tachometer (left) */
+    /* Tachometer (left) - ???????? ? 260 ?? 200 */
     tach_arc = lv_arc_create(scr);
-    lv_obj_set_size(tach_arc, 260, 260);
-    lv_obj_align(tach_arc, LV_ALIGN_LEFT_MID, 40, 0);
+    lv_obj_set_size(tach_arc, 200, 200);
+    lv_obj_align(tach_arc, LV_ALIGN_LEFT_MID, 10, 20);
     lv_arc_set_range(tach_arc, 0, 100);
     lv_arc_set_value(tach_arc, 0);
     lv_arc_set_bg_angles(tach_arc, 135, 405);
     lv_arc_set_rotation(tach_arc, 135);
-    lv_obj_set_style_arc_width(tach_arc, 18, 0);
+    lv_obj_set_style_arc_width(tach_arc, 14, 0);
     lv_obj_set_style_arc_color(tach_arc, lv_color_hex(0x222222), LV_PART_MAIN);
     lv_obj_set_style_arc_color(tach_arc, lv_color_hex(0x00aaff), LV_PART_INDICATOR);
     lv_obj_set_flag(tach_arc, LV_OBJ_FLAG_CLICKABLE, true);
@@ -341,24 +342,24 @@ static void create_dashboard(void) {
     tach_label = lv_label_create(scr);
     lv_label_set_text(tach_label, "0");
     lv_obj_set_style_text_color(tach_label, lv_color_white(), 0);
-    lv_obj_set_style_text_font(tach_label, &lv_font_montserrat_36, 0);
-    lv_obj_align_to(tach_label, tach_arc, LV_ALIGN_CENTER, 0, 20);
+    lv_obj_set_style_text_font(tach_label, &lv_font_montserrat_28, 0);
+    lv_obj_align_to(tach_label, tach_arc, LV_ALIGN_CENTER, 0, 15);
 
     lv_obj_t *tach_title = lv_label_create(scr);
-    lv_label_set_text(tach_title, "RPM x1000");
+    lv_label_set_text(tach_title, "RPM");
     lv_obj_set_style_text_color(tach_title, lv_color_hex(0x888888), 0);
     lv_obj_set_style_text_font(tach_title, &lv_font_montserrat_14, 0);
-    lv_obj_align_to(tach_title, tach_arc, LV_ALIGN_CENTER, 0, 60);
+    lv_obj_align_to(tach_title, tach_arc, LV_ALIGN_CENTER, 0, 45);
 
-    /* Speedometer (right) */
+    /* Speedometer (right) - ???????? ? 260 ?? 200 */
     speed_arc = lv_arc_create(scr);
-    lv_obj_set_size(speed_arc, 260, 260);
-    lv_obj_align(speed_arc, LV_ALIGN_RIGHT_MID, -40, 0);
+    lv_obj_set_size(speed_arc, 200, 200);
+    lv_obj_align(speed_arc, LV_ALIGN_RIGHT_MID, -10, 20);
     lv_arc_set_range(speed_arc, 0, 100);
     lv_arc_set_value(speed_arc, 0);
     lv_arc_set_bg_angles(speed_arc, 135, 405);
     lv_arc_set_rotation(speed_arc, 135);
-    lv_obj_set_style_arc_width(speed_arc, 18, 0);
+    lv_obj_set_style_arc_width(speed_arc, 14, 0);
     lv_obj_set_style_arc_color(speed_arc, lv_color_hex(0x222222), LV_PART_MAIN);
     lv_obj_set_style_arc_color(speed_arc, lv_color_hex(0x00ff88), LV_PART_INDICATOR);
     lv_obj_set_flag(speed_arc, LV_OBJ_FLAG_CLICKABLE, true);
@@ -367,20 +368,20 @@ static void create_dashboard(void) {
     speed_label = lv_label_create(scr);
     lv_label_set_text(speed_label, "0");
     lv_obj_set_style_text_color(speed_label, lv_color_white(), 0);
-    lv_obj_set_style_text_font(speed_label, &lv_font_montserrat_36, 0);
-    lv_obj_align_to(speed_label, speed_arc, LV_ALIGN_CENTER, 0, 20);
+    lv_obj_set_style_text_font(speed_label, &lv_font_montserrat_28, 0);
+    lv_obj_align_to(speed_label, speed_arc, LV_ALIGN_CENTER, 0, 15);
 
     lv_obj_t *speed_title = lv_label_create(scr);
     lv_label_set_text(speed_title, "km/h");
     lv_obj_set_style_text_color(speed_title, lv_color_hex(0x888888), 0);
     lv_obj_set_style_text_font(speed_title, &lv_font_montserrat_14, 0);
-    lv_obj_align_to(speed_title, speed_arc, LV_ALIGN_CENTER, 0, 60);
+    lv_obj_align_to(speed_title, speed_arc, LV_ALIGN_CENTER, 0, 45);
 
-    /* Indicators row */
-    int ind_y = 80;
-    int ind_sz = 50;
-    int sp = 70;
-    int sx = (DISP_H_RES - (4 * sp)) / 2 + 10;
+    /* Indicators row - ????????? ? ???????? */
+    int ind_y = 60;
+    int ind_sz = 40;
+    int sp = 55;
+    int sx = (DISP_H_RES - (3 * sp)) / 2;
 
     light_ind = lv_obj_create(scr);
     lv_obj_set_size(light_ind, ind_sz, ind_sz);
@@ -394,10 +395,10 @@ static void create_dashboard(void) {
     lv_obj_add_event_cb(light_ind, light_click_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *light_lbl = lv_label_create(scr);
-    lv_label_set_text(light_lbl, "LIGHT");
+    lv_label_set_text(light_lbl, "L");
     lv_obj_set_style_text_color(light_lbl, lv_color_hex(0xaaaaaa), 0);
     lv_obj_set_style_text_font(light_lbl, &lv_font_montserrat_10, 0);
-    lv_obj_align_to(light_lbl, light_ind, LV_ALIGN_OUT_BOTTOM_MID, 0, 5);
+    lv_obj_align_to(light_lbl, light_ind, LV_ALIGN_OUT_BOTTOM_MID, 0, 3);
 
     left_turn = lv_obj_create(scr);
     lv_obj_set_size(left_turn, ind_sz, ind_sz);
@@ -411,10 +412,10 @@ static void create_dashboard(void) {
     lv_obj_add_event_cb(left_turn, left_turn_click_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *left_lbl = lv_label_create(scr);
-    lv_label_set_text(left_lbl, "< LEFT");
+    lv_label_set_text(left_lbl, "<");
     lv_obj_set_style_text_color(left_lbl, lv_color_hex(0xaaaaaa), 0);
     lv_obj_set_style_text_font(left_lbl, &lv_font_montserrat_10, 0);
-    lv_obj_align_to(left_lbl, left_turn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5);
+    lv_obj_align_to(left_lbl, left_turn, LV_ALIGN_OUT_BOTTOM_MID, 0, 3);
 
     right_turn = lv_obj_create(scr);
     lv_obj_set_size(right_turn, ind_sz, ind_sz);
@@ -428,10 +429,10 @@ static void create_dashboard(void) {
     lv_obj_add_event_cb(right_turn, right_turn_click_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *right_lbl = lv_label_create(scr);
-    lv_label_set_text(right_lbl, "RIGHT >");
+    lv_label_set_text(right_lbl, ">");
     lv_obj_set_style_text_color(right_lbl, lv_color_hex(0xaaaaaa), 0);
     lv_obj_set_style_text_font(right_lbl, &lv_font_montserrat_10, 0);
-    lv_obj_align_to(right_lbl, right_turn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5);
+    lv_obj_align_to(right_lbl, right_turn, LV_ALIGN_OUT_BOTTOM_MID, 0, 3);
 
     engine_ind = lv_obj_create(scr);
     lv_obj_set_size(engine_ind, ind_sz, ind_sz);
@@ -445,10 +446,10 @@ static void create_dashboard(void) {
     lv_obj_add_event_cb(engine_ind, engine_click_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *engine_lbl = lv_label_create(scr);
-    lv_label_set_text(engine_lbl, "ENGINE");
+    lv_label_set_text(engine_lbl, "E");
     lv_obj_set_style_text_color(engine_lbl, lv_color_hex(0xaaaaaa), 0);
     lv_obj_set_style_text_font(engine_lbl, &lv_font_montserrat_10, 0);
-    lv_obj_align_to(engine_lbl, engine_ind, LV_ALIGN_OUT_BOTTOM_MID, 0, 5);
+    lv_obj_align_to(engine_lbl, engine_ind, LV_ALIGN_OUT_BOTTOM_MID, 0, 3);
 
     /* Timers */
     lv_timer_create(blink_timer_cb, 500, NULL);
