@@ -79,6 +79,7 @@ static void backlight_init(void) {
 /* Display init */
 static esp_err_t display_init(void) {
     ESP_LOGI(TAG, "Init JD9165...");
+
     esp_ldo_channel_handle_t ldo = NULL;
     esp_ldo_channel_config_t ldo_cfg = { .chan_id = 3, .voltage_mv = 2500 };
     ESP_RETURN_ON_ERROR(esp_ldo_acquire_channel(&ldo_cfg, &ldo), TAG, "LDO");
@@ -99,6 +100,7 @@ static esp_err_t display_init(void) {
         .init_cmds_size = 0,
         .mipi_config = { .dsi_bus = dsi_bus, .dpi_config = &dpi_cfg },
     };
+
     esp_lcd_panel_dev_config_t panel_cfg = {
         .reset_gpio_num = DISP_RST_GPIO,
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
@@ -110,6 +112,7 @@ static esp_err_t display_init(void) {
     ESP_RETURN_ON_ERROR(esp_lcd_panel_reset(panel_handle), TAG, "Reset");
     ESP_RETURN_ON_ERROR(esp_lcd_panel_init(panel_handle), TAG, "Init");
     ESP_RETURN_ON_ERROR(esp_lcd_panel_disp_on_off(panel_handle, true), TAG, "On");
+
     ESP_LOGI(TAG, "Display ready %dx%d", DISP_H_RES, DISP_V_RES);
     return ESP_OK;
 }
@@ -174,7 +177,7 @@ static void touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data) {
 
 static void tick_cb(void *arg) { lv_tick_inc(2); }
 
-/* Event callbacks */
+/* Event callbacks - ?????? C, ??? ????? */
 static void tach_click_cb(lv_event_t *e) {
     ESP_LOGI(TAG, "Tach clicked");
     lv_anim_t a;
@@ -285,23 +288,22 @@ static void create_dashboard(void) {
     lv_obj_t *scr = lv_screen_active();
     lv_obj_set_style_bg_color(scr, lv_color_hex(0x0a0a0a), 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
-    lv_obj_set_scroll_dir(scr, LV_DIR_NONE);  /* ??????? ?????? ????????? */
 
     /* Top bar: time, date, odometer */
     lbl_time = lv_label_create(scr);
     lv_obj_set_style_text_color(lbl_time, lv_color_white(), 0);
-    lv_obj_set_style_text_font(lbl_time, &lv_font_montserrat_24, 0);
-    lv_obj_align(lbl_time, LV_ALIGN_TOP_LEFT, 10, 5);
+    lv_obj_set_style_text_font(lbl_time, &lv_font_montserrat_36, 0);
+    lv_obj_align(lbl_time, LV_ALIGN_TOP_LEFT, 20, 10);
 
     lbl_date = lv_label_create(scr);
     lv_obj_set_style_text_color(lbl_date, lv_color_hex(0xaaaaaa), 0);
     lv_obj_set_style_text_font(lbl_date, &lv_font_montserrat_14, 0);
-    lv_obj_align_to(lbl_date, lbl_time, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 2);
+    lv_obj_align_to(lbl_date, lbl_time, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 5);
 
     lbl_odometer = lv_label_create(scr);
     lv_obj_set_style_text_color(lbl_odometer, lv_color_white(), 0);
-    lv_obj_set_style_text_font(lbl_odometer, &lv_font_montserrat_20, 0);
-    lv_obj_align(lbl_odometer, LV_ALIGN_TOP_RIGHT, -10, 10);
+    lv_obj_set_style_text_font(lbl_odometer, &lv_font_montserrat_24, 0);
+    lv_obj_align(lbl_odometer, LV_ALIGN_TOP_RIGHT, -20, 20);
 
     /* Bottom info bar */
     lv_obj_t *info_bar = lv_obj_create(scr);
@@ -325,7 +327,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_color(lbl_volt, lv_color_hex(0x4488ff), 0);
     lv_obj_set_style_text_font(lbl_volt, &lv_font_montserrat_14, 0);
 
-    /* Tachometer (left) - ???????? ? 260 ?? 200 */
+    /* Tachometer (left) */
     tach_arc = lv_arc_create(scr);
     lv_obj_set_size(tach_arc, 200, 200);
     lv_obj_align(tach_arc, LV_ALIGN_LEFT_MID, 10, 20);
@@ -351,7 +353,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_font(tach_title, &lv_font_montserrat_14, 0);
     lv_obj_align_to(tach_title, tach_arc, LV_ALIGN_CENTER, 0, 45);
 
-    /* Speedometer (right) - ???????? ? 260 ?? 200 */
+    /* Speedometer (right) */
     speed_arc = lv_arc_create(scr);
     lv_obj_set_size(speed_arc, 200, 200);
     lv_obj_align(speed_arc, LV_ALIGN_RIGHT_MID, -10, 20);
@@ -377,7 +379,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_font(speed_title, &lv_font_montserrat_14, 0);
     lv_obj_align_to(speed_title, speed_arc, LV_ALIGN_CENTER, 0, 45);
 
-    /* Indicators row - ????????? ? ???????? */
+    /* Indicators row */
     int ind_y = 60;
     int ind_sz = 40;
     int sp = 55;
@@ -459,6 +461,7 @@ static void create_dashboard(void) {
 /* MAIN */
 void app_main(void) {
     ESP_LOGI(TAG, "=== DASHBOARD START ===");
+
     backlight_init();
     ESP_ERROR_CHECK(display_init());
     esp_err_t tp_err = touch_init();
