@@ -29,7 +29,7 @@ static const char *TAG = "DASH";
 static esp_lcd_panel_handle_t panel_handle = NULL;
 static esp_lcd_touch_handle_t tp_handle = NULL;
 
-/* --- LVGL objects --- */
+/* LVGL objects */
 static lv_obj_t *tach_arc = NULL;
 static lv_obj_t *tach_label = NULL;
 static lv_obj_t *speed_arc = NULL;
@@ -45,7 +45,7 @@ static bool left_blink = false;
 static bool right_blink = false;
 static uint8_t blink_state = 0;
 
-/* --- Backlight --- */
+/* Backlight */
 static void backlight_init(void) {
     ledc_timer_config_t t = {
         .speed_mode = LEDC_LOW_SPEED_MODE,
@@ -65,9 +65,10 @@ static void backlight_init(void) {
         .hpoint = 0,
     };
     ESP_ERROR_CHECK(ledc_channel_config(&c));
+    ESP_LOGI(TAG, "Backlight ON");
 }
 
-/* --- Display init (JD9165) --- */
+/* Display init */
 static esp_err_t display_init(void) {
     ESP_LOGI(TAG, "Init JD9165 display...");
 
@@ -108,7 +109,7 @@ static esp_err_t display_init(void) {
     return ESP_OK;
 }
 
-/* --- Touch init (GT911) --- */
+/* Touch init */
 static esp_err_t touch_init(void) {
     ESP_LOGI(TAG, "Init GT911 touch...");
     i2c_master_bus_handle_t i2c_bus = NULL;
@@ -144,12 +145,13 @@ static esp_err_t touch_init(void) {
     return ESP_OK;
 }
 
-/* --- LVGL flush & touch callbacks --- */
+/* LVGL flush callback */
 static void flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
     esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, px_map);
     lv_display_flush_ready(disp);
 }
 
+/* LVGL touch callback */
 static void touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data) {
     if (!tp_handle) { data->state = LV_INDEV_STATE_RELEASED; return; }
     esp_lcd_touch_read_data(tp_handle);
@@ -167,13 +169,13 @@ static void touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data) {
 
 static void tick_cb(void *arg) { lv_tick_inc(2); }
 
-/* --- Event handlers --- */
+/* Event handlers */
 static void tach_click_cb(lv_event_t *e) {
-    ESP_LOGI(TAG, "Tachometer clicked - revving up!");
+    ESP_LOGI(TAG, "Tach clicked - revving!");
     lv_anim_t a;
     lv_anim_init(&a);
     lv_anim_set_var(&a, tach_arc);
-    lv_anim_set_values(&a, 0, 75);  // 75% of 8000 = 6000 RPM
+    lv_anim_set_values(&a, 0, 75);
     lv_anim_set_duration(&a, 1500);
     lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_arc_set_value);
     lv_anim_set_path_cb(&a, lv_anim_path_ease_in_out);
@@ -181,11 +183,11 @@ static void tach_click_cb(lv_event_t *e) {
 }
 
 static void speed_click_cb(lv_event_t *e) {
-    ESP_LOGI(TAG, "Speedometer clicked - accelerating!");
+    ESP_LOGI(TAG, "Speed clicked - accelerating!");
     lv_anim_t a;
     lv_anim_init(&a);
     lv_anim_set_var(&a, speed_arc);
-    lv_anim_set_values(&a, 0, 55);  // 55% of 220 = 120 km/h
+    lv_anim_set_values(&a, 0, 55);
     lv_anim_set_duration(&a, 2000);
     lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_arc_set_value);
     lv_anim_set_path_cb(&a, lv_anim_path_ease_in_out);
@@ -201,36 +203,31 @@ static void light_click_cb(lv_event_t *e) {
 static void left_turn_click_cb(lv_event_t *e) {
     left_blink = !left_blink;
     if (!left_blink) lv_obj_set_style_bg_color(left_turn, lv_color_hex(0x333333), 0);
-    ESP_LOGI(TAG, "Left turn: %s", left_blink ? "BLINKING" : "OFF");
+    ESP_LOGI(TAG, "Left turn: %s", left_blink ? "BLINK" : "OFF");
 }
 
 static void right_turn_click_cb(lv_event_t *e) {
     right_blink = !right_blink;
     if (!right_blink) lv_obj_set_style_bg_color(right_turn, lv_color_hex(0x333333), 0);
-    ESP_LOGI(TAG, "Right turn: %s", right_blink ? "BLINKING" : "OFF");
+    ESP_LOGI(TAG, "Right turn: %s", right_blink ? "BLINK" : "OFF");
 }
 
 static void engine_click_cb(lv_event_t *e) {
     engine_on = !engine_on;
     lv_obj_set_style_bg_color(engine_ind, engine_on ? lv_color_hex(0xff6600) : lv_color_hex(0x333333), 0);
-    ESP_LOGI(TAG, "Check Engine: %s", engine_on ? "ON" : "OFF");
+    ESP_LOGI(TAG, "Engine: %s", engine_on ? "ON" : "OFF");
 }
 
-/* --- Blink timer (for turn signals) --- */
+/* Blink timer */
 static void blink_timer_cb(lv_timer_t *timer) {
     blink_state = !blink_state;
     lv_color_t on_color = lv_color_hex(0x00ff00);
     lv_color_t off_color = lv_color_hex(0x333333);
-
-    if (left_blink) {
-        lv_obj_set_style_bg_color(left_turn, blink_state ? on_color : off_color, 0);
-    }
-    if (right_blink) {
-        lv_obj_set_style_bg_color(right_turn, blink_state ? on_color : off_color, 0);
-    }
+    if (left_blink) lv_obj_set_style_bg_color(left_turn, blink_state ? on_color : off_color, 0);
+    if (right_blink) lv_obj_set_style_bg_color(right_turn, blink_state ? on_color : off_color, 0);
 }
 
-/* --- Value update timer (sync arc value -> label) --- */
+/* Value update timer */
 static void value_update_cb(lv_timer_t *timer) {
     int16_t tach_val = lv_arc_get_value(tach_arc);
     int rpm = (tach_val * 8000) / 100;
@@ -244,7 +241,7 @@ static void value_update_cb(lv_timer_t *timer) {
     lv_label_set_text(speed_label, buf);
 }
 
-/* --- LVGL task --- */
+/* LVGL task */
 static void lvgl_task(void *arg) {
     while (1) {
         uint32_t t = lv_timer_handler();
@@ -253,24 +250,24 @@ static void lvgl_task(void *arg) {
     }
 }
 
-/* --- Build dashboard UI --- */
+/* Build dashboard UI */
 static void create_dashboard(void) {
     lv_obj_t *scr = lv_screen_active();
     lv_obj_set_style_bg_color(scr, lv_color_hex(0x0a0a0a), 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
 
-    /* === ???????? (?????) === */
+    /* Tachometer (left) */
     tach_arc = lv_arc_create(scr);
     lv_obj_set_size(tach_arc, 260, 260);
     lv_obj_align(tach_arc, LV_ALIGN_LEFT_MID, 40, 0);
     lv_arc_set_range(tach_arc, 0, 100);
     lv_arc_set_value(tach_arc, 0);
-    lv_arc_set_bg_angles(tach_arc, 135, 405);  // 270 ???????? ????
+    lv_arc_set_bg_angles(tach_arc, 135, 405);
     lv_arc_set_rotation(tach_arc, 135);
     lv_obj_set_style_arc_width(tach_arc, 18, 0);
     lv_obj_set_style_arc_color(tach_arc, lv_color_hex(0x222222), LV_PART_MAIN);
     lv_obj_set_style_arc_color(tach_arc, lv_color_hex(0x00aaff), LV_PART_INDICATOR);
-    lv_obj_add_flag(tach_arc, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_flag(tach_arc, LV_OBJ_FLAG_CLICKABLE, true);
     lv_obj_add_event_cb(tach_arc, tach_click_cb, LV_EVENT_CLICKED, NULL);
 
     tach_label = lv_label_create(scr);
@@ -285,7 +282,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_font(tach_title, &lv_font_montserrat_14, 0);
     lv_obj_align_to(tach_title, tach_arc, LV_ALIGN_CENTER, 0, 60);
 
-    /* === ????????? (??????) === */
+    /* Speedometer (right) */
     speed_arc = lv_arc_create(scr);
     lv_obj_set_size(speed_arc, 260, 260);
     lv_obj_align(speed_arc, LV_ALIGN_RIGHT_MID, -40, 0);
@@ -296,7 +293,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_arc_width(speed_arc, 18, 0);
     lv_obj_set_style_arc_color(speed_arc, lv_color_hex(0x222222), LV_PART_MAIN);
     lv_obj_set_style_arc_color(speed_arc, lv_color_hex(0x00ff88), LV_PART_INDICATOR);
-    lv_obj_add_flag(speed_arc, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_flag(speed_arc, LV_OBJ_FLAG_CLICKABLE, true);
     lv_obj_add_event_cb(speed_arc, speed_click_cb, LV_EVENT_CLICKED, NULL);
 
     speed_label = lv_label_create(scr);
@@ -311,13 +308,13 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_font(speed_title, &lv_font_montserrat_14, 0);
     lv_obj_align_to(speed_title, speed_arc, LV_ALIGN_CENTER, 0, 60);
 
-    /* === ?????????? (?? ??????, ? ???) === */
+    /* Indicators row */
     int ind_y = 80;
     int ind_size = 50;
     int ind_spacing = 70;
     int start_x = (DISP_H_RES - (4 * ind_spacing)) / 2 + 10;
 
-    /* ???? (??????) */
+    /* Light indicator */
     light_ind = lv_obj_create(scr);
     lv_obj_set_size(light_ind, ind_size, ind_size);
     lv_obj_align(light_ind, LV_ALIGN_TOP_MID, start_x - ind_spacing, ind_y);
@@ -326,7 +323,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_radius(light_ind, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_border_width(light_ind, 2, 0);
     lv_obj_set_style_border_color(light_ind, lv_color_hex(0xffdd00), 0);
-    lv_obj_add_flag(light_ind, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_flag(light_ind, LV_OBJ_FLAG_CLICKABLE, true);
     lv_obj_add_event_cb(light_ind, light_click_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *light_lbl = lv_label_create(scr);
@@ -335,7 +332,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_font(light_lbl, &lv_font_montserrat_10, 0);
     lv_obj_align_to(light_lbl, light_ind, LV_ALIGN_OUT_BOTTOM_MID, 0, 5);
 
-    /* ????? ?????????? */
+    /* Left turn */
     left_turn = lv_obj_create(scr);
     lv_obj_set_size(left_turn, ind_size, ind_size);
     lv_obj_align(left_turn, LV_ALIGN_TOP_MID, start_x, ind_y);
@@ -344,7 +341,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_radius(left_turn, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_border_width(left_turn, 2, 0);
     lv_obj_set_style_border_color(left_turn, lv_color_hex(0x00ff00), 0);
-    lv_obj_add_flag(left_turn, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_flag(left_turn, LV_OBJ_FLAG_CLICKABLE, true);
     lv_obj_add_event_cb(left_turn, left_turn_click_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *left_lbl = lv_label_create(scr);
@@ -353,7 +350,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_font(left_lbl, &lv_font_montserrat_10, 0);
     lv_obj_align_to(left_lbl, left_turn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5);
 
-    /* ?????? ?????????? */
+    /* Right turn */
     right_turn = lv_obj_create(scr);
     lv_obj_set_size(right_turn, ind_size, ind_size);
     lv_obj_align(right_turn, LV_ALIGN_TOP_MID, start_x + ind_spacing, ind_y);
@@ -362,7 +359,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_radius(right_turn, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_border_width(right_turn, 2, 0);
     lv_obj_set_style_border_color(right_turn, lv_color_hex(0x00ff00), 0);
-    lv_obj_add_flag(right_turn, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_flag(right_turn, LV_OBJ_FLAG_CLICKABLE, true);
     lv_obj_add_event_cb(right_turn, right_turn_click_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *right_lbl = lv_label_create(scr);
@@ -371,7 +368,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_font(right_lbl, &lv_font_montserrat_10, 0);
     lv_obj_align_to(right_lbl, right_turn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5);
 
-    /* Check Engine (?????????) */
+    /* Check Engine */
     engine_ind = lv_obj_create(scr);
     lv_obj_set_size(engine_ind, ind_size, ind_size);
     lv_obj_align(engine_ind, LV_ALIGN_TOP_MID, start_x + 2 * ind_spacing, ind_y);
@@ -380,7 +377,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_radius(engine_ind, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_border_width(engine_ind, 2, 0);
     lv_obj_set_style_border_color(engine_ind, lv_color_hex(0xff6600), 0);
-    lv_obj_add_flag(engine_ind, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_flag(engine_ind, LV_OBJ_FLAG_CLICKABLE, true);
     lv_obj_add_event_cb(engine_ind, engine_click_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *engine_lbl = lv_label_create(scr);
@@ -389,19 +386,19 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_font(engine_lbl, &lv_font_montserrat_10, 0);
     lv_obj_align_to(engine_lbl, engine_ind, LV_ALIGN_OUT_BOTTOM_MID, 0, 5);
 
-    /* ????????? */
+    /* Title */
     lv_obj_t *title = lv_label_create(scr);
     lv_label_set_text(title, "DASHBOARD");
     lv_obj_set_style_text_color(title, lv_color_hex(0x555555), 0);
     lv_obj_set_style_text_font(title, &lv_font_montserrat_14, 0);
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 10);
 
-    /* ??????? */
+    /* Timers */
     lv_timer_create(blink_timer_cb, 500, NULL);
     lv_timer_create(value_update_cb, 100, NULL);
 }
 
-/* --- MAIN --- */
+/* MAIN */
 void app_main(void) {
     ESP_LOGI(TAG, "=== DASHBOARD START ===");
 
