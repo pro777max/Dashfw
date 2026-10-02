@@ -1,4 +1,2 @@
 dependencies:
-  espressif/esp32_p4_function_ev_board: "==5.2.3"
-  espressif/esp_lvgl_port: ">=2.4.0,<2.8.0"
-  lvgl/lvgl: ">=9,<10"
+  espressif/esp32_p4_function_ev_board: "^5.2.0"
