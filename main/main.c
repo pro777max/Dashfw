@@ -58,7 +58,7 @@ void app_main(void) {
 
     lv_display_t *dd = lv_display_get_default();
     if (dd) {
-        ESP_LOGI(TAG, "lvgl disp res: %dx%d",
+        ESP_LOGI(TAG, "lvgl disp res: %dx%d", (int)
                  (int)lv_display_get_horizontal_resolution(dd),
                  (int)lv_display_get_vertical_resolution(dd));
     } else {
