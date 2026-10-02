@@ -123,6 +123,7 @@ static esp_err_t display_init(void)
     ESP_RETURN_ON_ERROR(esp_lcd_new_panel_io_dbi(dsi_bus, &dbi_cfg, &dbi_io), TAG, "DBI IO failed");
 
     esp_lcd_dpi_panel_config_t dpi_cfg = JD9165_1024_600_PANEL_60HZ_DPI_CONFIG(LCD_COLOR_PIXEL_FORMAT_RGB565);
+    dpi_config.pixel_clk_hz = 40 * 1000 * 1000;  // underrun fix: reduce PSRAM bandwidth pressure
 
     jd9165_vendor_config_t vendor_cfg = {
         .init_cmds = jd9165_init_cmds,
@@ -275,4 +276,5 @@ void app_main(void)
         if (sec % 10 == 0) ESP_LOGI(TAG, "alive %d sec", sec);
     }
 }
+
 

@@ -1,4 +1,4 @@
-name: Build ESP32-P4
+﻿name: Build ESP32-P4
 on: [push]
 permissions:
   contents: write
@@ -10,7 +10,7 @@ jobs:
       - name: ESP-IDF Build
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: v5.4.1
+          esp_idf_version: v5.5.3
           target: esp32p4
           command: |
             git config --global --add safe.directory /__w/Dashfw/Dashfw
@@ -46,3 +46,4 @@ jobs:
           tag_name: nightly
           files: dash_merged.bin
           prerelease: true
+
