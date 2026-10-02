@@ -21,7 +21,6 @@ static const char *TAG = "DASH";
 #define DISP_V_RES      600
 #define DISP_RST_GPIO   5
 #define DISP_BL_GPIO    23
-
 #define TOUCH_SDA       7
 #define TOUCH_SCL       8
 #define TOUCH_INT       21
@@ -29,6 +28,7 @@ static const char *TAG = "DASH";
 
 static esp_lcd_panel_handle_t panel_handle = NULL;
 static esp_lcd_touch_handle_t tp_handle = NULL;
+static lv_obj_t *box_obj = NULL;
 
 static void backlight_init(void) {
     ledc_timer_config_t t = {
@@ -135,16 +135,23 @@ static void touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data) {
         return;
     }
     esp_lcd_touch_read_data(tp_handle);
-    uint16_t x[1], y[1];
+
+    esp_lcd_touch_point_data_t pts[1];
     uint8_t touch_cnt = 0;
-    bool pressed = esp_lcd_touch_get_coordinates(tp_handle, x, y, NULL, &touch_cnt, 1);
+    bool pressed = esp_lcd_touch_get_data(tp_handle, pts, &touch_cnt, 1);
+
     if (pressed && touch_cnt > 0) {
-        data->point.x = x[0];
-        data->point.y = y[0];
+        data->point.x = pts[0].x;
+        data->point.y = pts[0].y;
         data->state = LV_INDEV_STATE_PRESSED;
     } else {
         data->state = LV_INDEV_STATE_RELEASED;
     }
+}
+
+static void box_click_cb(lv_event_t *e) {
+    ESP_LOGI(TAG, "TOUCH DETECTED ON BOX!");
+    lv_obj_set_style_bg_color(lv_event_get_target(e), lv_color_hex(0xff0000), 0);
 }
 
 static void flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
@@ -199,22 +206,18 @@ void app_main(void) {
     lv_obj_set_style_bg_color(scr, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
 
-    lv_obj_t *box = lv_obj_create(scr);
-    lv_obj_set_size(box, 500, 150);
-    lv_obj_center(box);
-    lv_obj_set_style_bg_color(box, lv_color_hex(0x00cc00), 0);
-    lv_obj_set_style_bg_opa(box, LV_OPA_COVER, 0);
+    box_obj = lv_obj_create(scr);
+    lv_obj_set_size(box_obj, 500, 150);
+    lv_obj_center(box_obj);
+    lv_obj_set_style_bg_color(box_obj, lv_color_hex(0x00cc00), 0);
+    lv_obj_set_style_bg_opa(box_obj, LV_OPA_COVER, 0);
 
-    lv_obj_t *label = lv_label_create(box);
+    lv_obj_t *label = lv_label_create(box_obj);
     lv_label_set_text(label, "DASH WORKS!\nTouch to test");
     lv_obj_set_style_text_color(label, lv_color_black(), 0);
     lv_obj_center(label);
 
-    lv_obj_add_flag(box, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_add_event_cb(box, [](lv_event_t *e) {
-        ESP_LOGI(TAG, "TOUCH DETECTED ON BOX!");
-        lv_obj_set_style_bg_color(lv_event_get_target(e), lv_color_hex(0xff0000), 0);
-    }, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(box_obj, box_click_cb, LV_EVENT_CLICKED, NULL);
 
     ESP_LOGI(TAG, "UI drawn, starting LVGL task");
     xTaskCreatePinnedToCore(lvgl_task, "lvgl", 8192, NULL, 5, NULL, 0);
