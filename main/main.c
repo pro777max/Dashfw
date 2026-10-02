@@ -1,11 +1,10 @@
 #include <stdio.h>
-#include <string.h>
+#include <inttypes.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
-#include "esp_lcd_panel_ops.h"
 #include "lvgl.h"
 #include "bsp/esp-bsp.h"
 
@@ -54,67 +53,42 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "display start");
     bsp_display_start();
-    ESP_LOGI(TAG, "display started");
 
-    // ???????? handles ??????? ??? ??????? ???????
-    bsp_lcd_handles_t lcd_handles;
-    bsp_display_config_t disp_cfg = {
-        .hdmi_resolution = BSP_HDMI_RES_NONE,
-        .dsi_bus = {
-            .phy_clk_src = MIPI_DSI_PHY_CLK_SRC_DEFAULT,
-            .lane_bit_rate_mbps = 1000,
-        },
-    };
-    esp_err_t ret = bsp_display_new_with_handles(&disp_cfg, &lcd_handles);
-    if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "Got LCD handles: panel=%p, io=%p", lcd_handles.panel, lcd_handles.io);
-        
-        // ?????? ????: ?????? ????? ????????????? 200x100 ? ??????
-        ESP_LOGI(TAG, "Drawing white rectangle directly to display...");
-        uint16_t white_buf[200 * 100];
-        memset(white_buf, 0xFF, sizeof(white_buf));  // ????? ???? ? RGB565
-        
-        // ?????????? ?????? ?????? 1024x600
-        int x_start = (1024 - 200) / 2;
-        int y_start = (600 - 100) / 2;
-        
-        ret = esp_lcd_panel_draw_bitmap(lcd_handles.panel, x_start, y_start, 
-                                        x_start + 200, y_start + 100, white_buf);
-        if (ret == ESP_OK) {
-            ESP_LOGI(TAG, "Direct draw SUCCESS - check if white rectangle is visible!");
-        } else {
-            ESP_LOGE(TAG, "Direct draw FAILED: %s", esp_err_to_name(ret));
-        }
-    } else {
-        ESP_LOGE(TAG, "bsp_display_new_with_handles failed: %s", esp_err_to_name(ret));
+    lv_display_t *dd = lv_display_get_default();
+    if (dd) {
+        ESP_LOGI(TAG, "lvgl disp res: %" PRId32 "x%" PRId32,
+                 lv_display_get_horizontal_resolution(dd),
+                 lv_display_get_vertical_resolution(dd));
     }
 
-    // ?????? LVGL
-    if (bsp_display_lock(1000)) {
+    bool locked = bsp_display_lock(2000);
+    ESP_LOGI(TAG, "lock(2000) = %d", (int)locked);
+    if (locked) {
         lv_obj_t *scr = lv_screen_active();
-        lv_obj_set_style_bg_color(scr, lv_color_black(), 0);
+        lv_obj_set_style_bg_color(scr, lv_color_white(), 0);
         lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
 
         lv_obj_t *box = lv_obj_create(scr);
-        lv_obj_set_size(box, 400, 90);
-        lv_obj_align(box, LV_ALIGN_TOP_MID, 0, 10);
-        lv_obj_set_style_bg_color(box, lv_color_hex(0x00ff00), 0);
+        lv_obj_set_size(box, 500, 140);
+        lv_obj_align(box, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_set_style_bg_color(box, lv_color_hex(0x00cc00), 0);
         lv_obj_set_style_bg_opa(box, LV_OPA_COVER, 0);
-        lv_obj_set_style_border_width(box, 0, 0);
+        lv_obj_set_style_border_width(box, 6, 0);
+        lv_obj_set_style_border_color(box, lv_color_hex(0xff0000), 0);
         lv_obj_t *tt = lv_label_create(box);
-        lv_label_set_text(tt, "LVGL RENDER OK");
+        lv_label_set_text(tt, "DASH ALIVE");
         lv_obj_set_style_text_color(tt, lv_color_black(), 0);
         lv_obj_center(tt);
 
         lv_refr_now(NULL);
         bsp_display_unlock();
-        ESP_LOGI(TAG, "LVGL canary drawn");
+        ESP_LOGI(TAG, "canary drawn");
     }
 
-    int sec = 0;
+    int n = 0;
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));
-        sec++;
-        if (sec % 10 == 0) ESP_LOGI(TAG, "alive %d sec", sec);
+        n++;
+        if (n % 10 == 0) ESP_LOGI(TAG, "alive %d sec", n);
     }
 }
