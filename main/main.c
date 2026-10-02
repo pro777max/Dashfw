@@ -1,92 +1,37 @@
 #include <stdio.h>
-#include <inttypes.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_log.h"
-#include "driver/gpio.h"
-#include "driver/ledc.h"
-#include "lvgl.h"
 #include "bsp/esp-bsp.h"
+#include "lvgl.h"
+#include "esp_log.h"
+#include "driver/ledc.h"
 
-static const char *TAG = "DASH";
+void app_main(void)
+{
+    // ?????? ????????? ????????? (?? ????? ????? ??? GPIO 23, ? ?? 26)
+    ledc_timer_config_t t = { .speed_mode = LEDC_LOW_SPEED_MODE, .timer_num = LEDC_TIMER_2, .duty_resolution = LEDC_TIMER_10_BIT, .freq_hz = 1000, .clk_cfg = LEDC_AUTO_CLK };
+    ledc_timer_config(&t);
+    ledc_channel_config_t c = { .gpio_num = 23, .speed_mode = LEDC_LOW_SPEED_MODE, .channel = LEDC_CHANNEL_2, .timer_sel = LEDC_TIMER_2, .intr_type = LEDC_INTR_DISABLE, .duty = 819, .hpoint = 0 };
+    ledc_channel_config(&c);
 
-static void i2c_bus_recovery(void) {
-    const int pins[] = {8, 22};
-    for (int p = 0; p < 2; p++) {
-        gpio_set_pull_mode((gpio_num_t)pins[p], GPIO_PULLUP_ONLY);
-        gpio_set_direction((gpio_num_t)pins[p], GPIO_MODE_OUTPUT_OD);
-        for (int i = 0; i < 9; i++) {
-            gpio_set_level((gpio_num_t)pins[p], 0);
-            vTaskDelay(pdMS_TO_TICKS(5));
-            gpio_set_level((gpio_num_t)pins[p], 1);
-            vTaskDelay(pdMS_TO_TICKS(5));
-        }
-        gpio_set_direction((gpio_num_t)pins[p], GPIO_MODE_INPUT);
-    }
-    vTaskDelay(pdMS_TO_TICKS(500));
-    ESP_LOGI(TAG, "i2c bus recovery done");
-}
-
-void app_main(void) {
-    ESP_LOGI(TAG, "boot: i2c recovery first");
-    i2c_bus_recovery();
-
-    ESP_LOGI(TAG, "backlight gpio23: 1kHz, 80%%");
-    ledc_timer_config_t t = {
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_num = LEDC_TIMER_2,
-        .duty_resolution = LEDC_TIMER_10_BIT,
-        .freq_hz = 1000,
-        .clk_cfg = LEDC_AUTO_CLK,
-    };
-    ESP_ERROR_CHECK(ledc_timer_config(&t));
-    ledc_channel_config_t c = {
-        .gpio_num = 23,
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .channel = LEDC_CHANNEL_2,
-        .timer_sel = LEDC_TIMER_2,
-        .intr_type = LEDC_INTR_DISABLE,
-        .duty = 819,
-        .hpoint = 0,
-    };
-    ESP_ERROR_CHECK(ledc_channel_config(&c));
-
-    ESP_LOGI(TAG, "display start");
     bsp_display_start();
-
-    lv_display_t *dd = lv_display_get_default();
-    if (dd) {
-        ESP_LOGI(TAG, "lvgl disp res: %" PRId32 "x%" PRId32,
-                 lv_display_get_horizontal_resolution(dd),
-                 lv_display_get_vertical_resolution(dd));
-    }
-
-    if (bsp_display_lock(2000)) {
+    
+    ESP_LOGI("DASH", "Display LVGL test");
+    if (bsp_display_lock(1000)) {
         lv_obj_t *scr = lv_screen_active();
+        
         lv_obj_set_style_bg_color(scr, lv_color_white(), 0);
         lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
 
-        lv_obj_t *box = lv_obj_create(scr);
-        lv_obj_set_size(box, 500, 140);
-        lv_obj_align(box, LV_ALIGN_CENTER, 0, 0);
-        lv_obj_set_style_bg_color(box, lv_color_hex(0x00cc00), 0);
-        lv_obj_set_style_bg_opa(box, LV_OPA_COVER, 0);
-        lv_obj_set_style_border_width(box, 6, 0);
-        lv_obj_set_style_border_color(box, lv_color_hex(0xff0000), 0);
-        lv_obj_t *tt = lv_label_create(box);
-        lv_label_set_text(tt, "DASH ALIVE");
-        lv_obj_set_style_text_color(tt, lv_color_black(), 0);
-        lv_obj_center(tt);
+        lv_obj_t *label = lv_label_create(scr);
+        lv_label_set_text(label, "DASH OK");
+        lv_obj_set_style_text_color(label, lv_color_black(), 0);
+        lv_obj_center(label);
 
-        lv_refr_now(NULL);
         bsp_display_unlock();
-        ESP_LOGI(TAG, "canary drawn");
     }
 
-    int n = 0;
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));
-        n++;
-        if (n % 10 == 0) ESP_LOGI(TAG, "alive %d sec", n);
     }
 }
