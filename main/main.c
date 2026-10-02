@@ -61,9 +61,7 @@ void app_main(void) {
                  lv_display_get_vertical_resolution(dd));
     }
 
-    bool locked = bsp_display_lock(2000);
-    ESP_LOGI(TAG, "lock(2000) = %d", (int)locked);
-    if (locked) {
+    if (bsp_display_lock(2000)) {
         lv_obj_t *scr = lv_screen_active();
         lv_obj_set_style_bg_color(scr, lv_color_white(), 0);
         lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
