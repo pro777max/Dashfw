@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -12,6 +12,7 @@
 #include "driver/ledc.h"
 #include "driver/i2c_master.h"
 #include "esp_lcd_touch_gt911.h"
+#include "esp_timer.h"
 #include "lvgl.h"
 
 static const char *TAG = "DASH";
@@ -274,3 +275,4 @@ void app_main(void)
         if (sec % 10 == 0) ESP_LOGI(TAG, "alive %d sec", sec);
     }
 }
+
