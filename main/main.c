@@ -44,7 +44,7 @@ static void backlight_init(void) {
         .channel = LEDC_CHANNEL_2,
         .timer_sel = LEDC_TIMER_2,
         .intr_type = LEDC_INTR_DISABLE,
-        .duty = 819, // 80%
+        .duty = 819,
         .hpoint = 0,
     };
     ESP_ERROR_CHECK(ledc_channel_config(&c));
@@ -67,8 +67,7 @@ static esp_err_t display_init(void) {
     ESP_RETURN_ON_ERROR(esp_lcd_new_panel_io_dbi(dsi_bus, &dbi_cfg, &dbi_io), TAG, "DBI IO failed");
 
     esp_lcd_dpi_panel_config_t dpi_cfg = JD9165_1024_600_PANEL_60HZ_DPI_CONFIG(LCD_COLOR_PIXEL_FORMAT_RGB565);
-    // ??????? ???????, ????? ???????? underrun ??? ?????? ? PSRAM
-    dpi_cfg.dpi_clock_freq_mhz = 40; 
+    dpi_cfg.dpi_clock_freq_mhz = 40;
 
     jd9165_vendor_config_t vendor_cfg = {
         .init_cmds = NULL,
@@ -135,26 +134,23 @@ static void touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data) {
         data->state = LV_INDEV_STATE_RELEASED;
         return;
     }
+    
     esp_lcd_touch_read_data(tp_handle);
     
     esp_lcd_touch_point_data_t pts[1];
     uint8_t touch_cnt = 0;
-    // ?????????? ?????????? API ?????? ??????????? esp_lcd_touch_get_coordinates
-    bool pressed = esp_lcd_touch_get_data(tp_handle, pts, &touch_cnt, 1);
     
-    if (pressed && touch_cnt > 0) {
+    // ???????????: ????????? ret == ESP_OK, ? ?? ??????????? ? bool (ESP_OK == 0)
+    esp_err_t ret = esp_lcd_touch_get_data(tp_handle, pts, &touch_cnt, 1);
+    
+    if (ret == ESP_OK && touch_cnt > 0) {
         data->point.x = pts[0].x;
         data->point.y = pts[0].y;
         data->state = LV_INDEV_STATE_PRESSED;
+        ESP_LOGI(TAG, "Touch pressed at X:%d Y:%d", data->point.x, data->point.y);
     } else {
         data->state = LV_INDEV_STATE_RELEASED;
     }
-}
-
-// ?????????? C-?????? ??? ????????? ??????? (?????? C++ ??????)
-static void box_click_cb(lv_event_t *e) {
-    ESP_LOGI(TAG, "TOUCH DETECTED ON BOX!");
-    lv_obj_set_style_bg_color(lv_event_get_target(e), lv_color_hex(0xff0000), 0);
 }
 
 static void flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
@@ -174,12 +170,17 @@ static void lvgl_task(void *arg) {
     }
 }
 
+// ???????????: ?????? C-??????? ?????? C++ ??????
+static void box_click_cb(lv_event_t *e) {
+    ESP_LOGI(TAG, "TOUCH DETECTED ON BOX!");
+    lv_obj_set_style_bg_color(lv_event_get_target(e), lv_color_hex(0x00ff00), 0); // ?????? ???????
+}
+
 void app_main(void) {
     ESP_LOGI(TAG, "=== DASH: Guition JC1060P470C starting ===");
 
     backlight_init();
     ESP_ERROR_CHECK(display_init());
-    
     esp_err_t tp_err = touch_init();
     if (tp_err != ESP_OK) {
         ESP_LOGW(TAG, "Touch init failed: %s (continuing without touch)", esp_err_to_name(tp_err));
@@ -215,7 +216,7 @@ void app_main(void) {
     lv_obj_t *box = lv_obj_create(scr);
     lv_obj_set_size(box, 500, 150);
     lv_obj_center(box);
-    lv_obj_set_style_bg_color(box, lv_color_hex(0x00cc00), 0); // ??????? ?? ?????????
+    lv_obj_set_style_bg_color(box, lv_color_hex(0xff0000), 0); // ???????? ? ????????
     lv_obj_set_style_bg_opa(box, LV_OPA_COVER, 0);
 
     lv_obj_t *label = lv_label_create(box);
@@ -223,7 +224,6 @@ void app_main(void) {
     lv_obj_set_style_text_color(label, lv_color_black(), 0);
     lv_obj_center(label);
 
-    // ???????????? C-??????? ??? ?????????? ???????
     lv_obj_add_event_cb(box, box_click_cb, LV_EVENT_CLICKED, NULL);
 
     ESP_LOGI(TAG, "UI drawn, starting LVGL task");
