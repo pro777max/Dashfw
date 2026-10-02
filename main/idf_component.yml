@@ -1,7 +1,4 @@
-﻿description: BSP Display example
-
 dependencies:
-  bsp_selector:
-    version: '*'
-    override_path: ../components/bsp_selector
-
+  espressif/esp32_p4_function_ev_board: "==5.2.3"
+  espressif/esp_lvgl_port: ">=2.9.0"
+  lvgl/lvgl: ">=9.6.0,<10.0.0"
