@@ -27,7 +27,6 @@ static const char *TAG = "DASH";
 #define TOUCH_INT       21
 #define TOUCH_RST       22
 
-/* Prius-style colors */
 #define C_BG            lv_color_hex(0x000000)
 #define C_GREEN         lv_color_hex(0x00ff88)
 #define C_GREEN_DIM     lv_color_hex(0x006633)
@@ -37,7 +36,6 @@ static const char *TAG = "DASH";
 static esp_lcd_panel_handle_t panel_handle = NULL;
 static esp_lcd_touch_handle_t tp_handle = NULL;
 
-/* UI objects */
 static lv_obj_t *fuel_arc = NULL;
 static lv_obj_t *fuel_label = NULL;
 static lv_obj_t *temp_arc = NULL;
@@ -51,7 +49,6 @@ static lv_obj_t *right_arrow = NULL;
 static lv_obj_t *tach_bar = NULL;
 static lv_obj_t *tach_label = NULL;
 
-/* State */
 static int fuel_val = 75;
 static int temp_val = 50;
 static int speed_val = 0;
@@ -157,7 +154,6 @@ static void touch_read_cb(lv_indev_t *indev, lv_indev_data_t *data) {
 
 static void tick_cb(void *arg) { lv_tick_inc(2); }
 
-/* Event callbacks - ?????? C */
 static void fuel_click_cb(lv_event_t *e) {
     fuel_val = (fuel_val + 25) % 101;
     lv_arc_set_value(fuel_arc, fuel_val);
@@ -251,7 +247,6 @@ static void create_dashboard(void) {
     lv_obj_set_style_bg_color(scr, C_BG, 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
 
-    /* === FUEL ARC (left) - ?????? === */
     fuel_arc = lv_arc_create(scr);
     lv_obj_set_size(fuel_arc, 180, 180);
     lv_obj_align(fuel_arc, LV_ALIGN_LEFT_MID, 30, -30);
@@ -259,7 +254,7 @@ static void create_dashboard(void) {
     lv_arc_set_value(fuel_arc, fuel_val);
     lv_arc_set_bg_angles(fuel_arc, 150, 30);
     lv_arc_set_rotation(fuel_arc, 135);
-    lv_obj_set_style_arc_width(fuel_arc, 20, 0);  /* ?????? ???? */
+    lv_obj_set_style_arc_width(fuel_arc, 20, 0);
     lv_obj_set_style_arc_color(fuel_arc, C_GREEN_DIM, LV_PART_MAIN);
     lv_obj_set_style_arc_color(fuel_arc, C_GREEN, LV_PART_INDICATOR);
     lv_obj_set_style_arc_rounded(fuel_arc, true, 0);
@@ -268,7 +263,7 @@ static void create_dashboard(void) {
 
     fuel_label = lv_label_create(scr);
     lv_obj_set_style_text_color(fuel_label, C_GREEN_BRIGHT, 0);
-    lv_obj_set_style_text_font(fuel_label, &lv_font_montserrat_36, 0);  /* ??????? ????? */
+    lv_obj_set_style_text_font(fuel_label, &lv_font_montserrat_36, 0);
     lv_obj_align_to(fuel_label, fuel_arc, LV_ALIGN_CENTER, 0, 0);
     char buf[32]; snprintf(buf, sizeof(buf), "%d", fuel_val);
     lv_label_set_text(fuel_label, buf);
@@ -285,7 +280,6 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_font(e_label, &lv_font_montserrat_20, 0);
     lv_obj_align_to(e_label, fuel_arc, LV_ALIGN_BOTTOM_RIGHT, 10, -10);
 
-    /* === TEMP ARC (right) - ?????? === */
     temp_arc = lv_arc_create(scr);
     lv_obj_set_size(temp_arc, 180, 180);
     lv_obj_align(temp_arc, LV_ALIGN_RIGHT_MID, -30, -30);
@@ -293,7 +287,7 @@ static void create_dashboard(void) {
     lv_arc_set_value(temp_arc, temp_val);
     lv_arc_set_bg_angles(temp_arc, 150, 30);
     lv_arc_set_rotation(temp_arc, 135);
-    lv_obj_set_style_arc_width(temp_arc, 20, 0);  /* ?????? ???? */
+    lv_obj_set_style_arc_width(temp_arc, 20, 0);
     lv_obj_set_style_arc_color(temp_arc, C_GREEN_DIM, LV_PART_MAIN);
     lv_obj_set_style_arc_color(temp_arc, C_GREEN, LV_PART_INDICATOR);
     lv_obj_set_style_arc_rounded(temp_arc, true, 0);
@@ -319,11 +313,10 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_font(c_label, &lv_font_montserrat_20, 0);
     lv_obj_align_to(c_label, temp_arc, LV_ALIGN_BOTTOM_LEFT, -10, -10);
 
-    /* === TURN ARROWS - ??????? === */
     left_arrow = lv_label_create(scr);
     lv_label_set_text(left_arrow, LV_SYMBOL_LEFT);
     lv_obj_set_style_text_color(left_arrow, C_GREEN_DIM, 0);
-    lv_obj_set_style_text_font(left_arrow, &lv_font_montserrat_48, 0);  /* ????? ?????? */
+    lv_obj_set_style_text_font(left_arrow, &lv_font_montserrat_48, 0);
     lv_obj_align(left_arrow, LV_ALIGN_TOP_MID, -100, 80);
     lv_obj_set_flag(left_arrow, LV_OBJ_FLAG_CLICKABLE, true);
     lv_obj_add_event_cb(left_arrow, left_click_cb, LV_EVENT_CLICKED, NULL);
@@ -336,10 +329,9 @@ static void create_dashboard(void) {
     lv_obj_set_flag(right_arrow, LV_OBJ_FLAG_CLICKABLE, true);
     lv_obj_add_event_cb(right_arrow, right_click_cb, LV_EVENT_CLICKED, NULL);
 
-    /* === SPEED - ????? ??????? === */
     speed_label = lv_label_create(scr);
     lv_obj_set_style_text_color(speed_label, C_GREEN_BRIGHT, 0);
-    lv_obj_set_style_text_font(speed_label, &lv_font_montserrat_48, 0);  /* ???????????? */
+    lv_obj_set_style_text_font(speed_label, &lv_font_montserrat_48, 0);
     lv_obj_align(speed_label, LV_ALIGN_CENTER, 0, -20);
     lv_label_set_text(speed_label, "0");
     lv_obj_set_flag(speed_label, LV_OBJ_FLAG_CLICKABLE, true);
@@ -351,7 +343,6 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_font(kmh_label, &lv_font_montserrat_20, 0);
     lv_obj_align_to(kmh_label, speed_label, LV_ALIGN_OUT_RIGHT_MID, 15, 0);
 
-    /* === SHIFT P === */
     shift_label = lv_label_create(scr);
     lv_obj_set_style_text_color(shift_label, C_GREEN, 0);
     lv_obj_set_style_text_font(shift_label, &lv_font_montserrat_24, 0);
@@ -360,7 +351,6 @@ static void create_dashboard(void) {
     lv_obj_set_flag(shift_label, LV_OBJ_FLAG_CLICKABLE, true);
     lv_obj_add_event_cb(shift_label, shift_click_cb, LV_EVENT_CLICKED, NULL);
 
-    /* === TACHOMETER - ?????? ?????? === */
     int tach_y = 430;
     int tach_x_start = 180;
     int tach_x_end = 840;
@@ -371,7 +361,7 @@ static void create_dashboard(void) {
         char nbuf[4]; snprintf(nbuf, sizeof(nbuf), "%d", i);
         lv_label_set_text(lbl, nbuf);
         lv_obj_set_style_text_color(lbl, (i >= 7) ? C_RED : C_GREEN, 0);
-        lv_obj_set_style_text_font(lbl, &lv_font_montserrat_20, 0);  /* ??????? */
+        lv_obj_set_style_text_font(lbl, &lv_font_montserrat_20, 0);
         int x = tach_x_start + (i * tach_width / 8);
         lv_obj_align(lbl, LV_ALIGN_TOP_LEFT, x - 8, tach_y - 30);
     }
@@ -383,7 +373,7 @@ static void create_dashboard(void) {
     lv_obj_align(rpm_title, LV_ALIGN_TOP_LEFT, tach_x_end - 80, tach_y - 50);
 
     tach_bar = lv_bar_create(scr);
-    lv_obj_set_size(tach_bar, tach_width, 20);  /* ???? */
+    lv_obj_set_size(tach_bar, tach_width, 20);
     lv_obj_align(tach_bar, LV_ALIGN_TOP_LEFT, tach_x_start, tach_y);
     lv_bar_set_range(tach_bar, 0, 8000);
     lv_bar_set_value(tach_bar, 0, LV_ANIM_OFF);
@@ -407,7 +397,6 @@ static void create_dashboard(void) {
     lv_obj_align(tach_label, LV_ALIGN_TOP_LEFT, tach_x_start - 60, tach_y - 5);
     lv_label_set_text(tach_label, "0");
 
-    /* === CONSUMPTION === */
     consumption_label = lv_label_create(scr);
     lv_obj_set_style_text_color(consumption_label, C_GREEN, 0);
     lv_obj_set_style_text_font(consumption_label, &lv_font_montserrat_20, 0);
@@ -415,7 +404,6 @@ static void create_dashboard(void) {
     snprintf(buf, sizeof(buf), "%.1f km/l", consumption);
     lv_label_set_text(consumption_label, buf);
 
-    /* === ODOMETER === */
     odo_label = lv_label_create(scr);
     lv_obj_set_style_text_color(odo_label, C_GREEN, 0);
     lv_obj_set_style_text_font(odo_label, &lv_font_montserrat_20, 0);
@@ -428,7 +416,7 @@ static void create_dashboard(void) {
 }
 
 void app_main(void) {
-    ESP_LOGI(TAG, "=== PRIUS DASHBOARD GREEN ===");
+    ESP_LOGI(TAG, "=== PRIUS DASHBOARD GREEN BOLD ===");
     backlight_init();
     ESP_ERROR_CHECK(display_init());
     esp_err_t tp_err = touch_init();
@@ -459,7 +447,7 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_timer_start_periodic(tick_timer, 2000));
 
     create_dashboard();
-    ESP_LOGI(TAG, "Dashboard ready - GREEN & BOLD");
+    ESP_LOGI(TAG, "Dashboard ready");
     xTaskCreatePinnedToCore(lvgl_task, "lvgl", 8192, NULL, 5, NULL, 0);
 
     while (1) {
