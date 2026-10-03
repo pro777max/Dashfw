@@ -55,7 +55,6 @@ static lv_obj_t *tach_label = NULL;
 static int fuel_val = 75;       /* 0-100 */
 static int temp_val = 50;       /* 0-100, 50 = ????? */
 static int speed_val = 0;       /* km/h */
-static int rpm_val = 0;         /* 0-8000 */
 static int odo_val = 222222;    /* km */
 static float consumption = 4.2f;
 static char gear = 'P';
@@ -166,7 +165,7 @@ static void tick_cb(void *arg) { lv_tick_inc(2); }
 static void fuel_click_cb(lv_event_t *e) {
     fuel_val = (fuel_val + 25) % 101;
     lv_arc_set_value(fuel_arc, fuel_val);
-    char buf[8]; snprintf(buf, sizeof(buf), "%d", fuel_val);
+    char buf[32]; snprintf(buf, sizeof(buf), "%d", fuel_val);
     lv_label_set_text(fuel_label, buf);
     ESP_LOGI(TAG, "Fuel: %d", fuel_val);
 }
@@ -174,7 +173,7 @@ static void fuel_click_cb(lv_event_t *e) {
 static void temp_click_cb(lv_event_t *e) {
     temp_val = (temp_val + 25) % 101;
     lv_arc_set_value(temp_arc, temp_val);
-    char buf[8]; snprintf(buf, sizeof(buf), "%d", temp_val);
+    char buf[32]; snprintf(buf, sizeof(buf), "%d", temp_val);
     lv_label_set_text(temp_label, buf);
     ESP_LOGI(TAG, "Temp: %d", temp_val);
 }
@@ -279,7 +278,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_color(fuel_label, C_GREEN, 0);
     lv_obj_set_style_text_font(fuel_label, &lv_font_montserrat_20, 0);
     lv_obj_align_to(fuel_label, fuel_arc, LV_ALIGN_CENTER, 0, 0);
-    char buf[8]; snprintf(buf, sizeof(buf), "%d", fuel_val);
+    char buf[32]; snprintf(buf, sizeof(buf), "%d", fuel_val);
     lv_label_set_text(fuel_label, buf);
 
     /* ??????? F/E */
@@ -492,3 +491,5 @@ void app_main(void) {
         ESP_LOGI(TAG, "alive");
     }
 }
+
+
