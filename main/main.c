@@ -1,6 +1,7 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <inttypes.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -13,6 +14,8 @@
 #include "esp_ldo_regulator.h"
 #include "driver/ledc.h"
 #include "driver/i2c_master.h"
+#include "driver/uart.h"
+#include "driver/gpio.h"
 #include "esp_lcd_touch_gt911.h"
 #include "lvgl.h"
 
@@ -26,6 +29,11 @@ static const char *TAG = "DASH";
 #define TOUCH_SCL       8
 #define TOUCH_INT       21
 #define TOUCH_RST       22
+
+#define UART_PORT_NUM   UART_NUM_2
+#define UART_TX_PIN     43
+#define UART_RX_PIN     44
+#define UART_BAUD_RATE  115200
 
 #define C_BG            lv_color_hex(0x000000)
 #define C_GREEN         lv_color_hex(0x00ff88)
@@ -58,6 +66,11 @@ static char gear = 'P';
 static bool left_blink = false;
 static bool right_blink = false;
 static uint8_t blink_state = 0;
+
+static int uart_speed = 0;
+static int uart_rpm = 0;
+static int uart_temp = 0;
+static bool uart_data_ready = false;
 
 static void backlight_init(void) {
     ledc_timer_config_t t = {
@@ -130,6 +143,56 @@ static esp_err_t touch_init(void) {
     };
     ESP_RETURN_ON_ERROR(esp_lcd_touch_new_i2c_gt911(tp_io, &tp_cfg, &tp_handle), TAG, "GT911");
     return ESP_OK;
+}
+
+static void uart_init(void) {
+    uart_config_t uart_config = {
+        .baud_rate = UART_BAUD_RATE,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .source_clk = UART_SCLK_DEFAULT,
+    };
+    ESP_ERROR_CHECK(uart_driver_install(UART_PORT_NUM, 512, 0, 0, NULL, 0));
+    ESP_ERROR_CHECK(uart_param_config(UART_PORT_NUM, &uart_config));
+    ESP_ERROR_CHECK(uart_set_pin(UART_PORT_NUM, UART_TX_PIN, UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    ESP_LOGI(TAG, "UART2 initialized on TX:%d RX:%d", UART_TX_PIN, UART_RX_PIN);
+}
+
+static void uart_rx_task(void *arg) {
+    uint8_t *data = (uint8_t *)malloc(256);
+    if (!data) {
+        ESP_LOGE(TAG, "Failed to allocate UART buffer");
+        vTaskDelete(NULL);
+        return;
+    }
+    int len = 0;
+    while (1) {
+        int read_len = uart_read_bytes(UART_PORT_NUM, data + len, 255 - len, 20 / portTICK_PERIOD_MS);
+        if (read_len > 0) {
+            len += read_len;
+            uint8_t *newline = memchr(data, '\n', len);
+            if (newline) {
+                *newline = '\0';
+                int s, r, t;
+                if (sscanf((char *)data, "SPEED:%d,RPM:%d,TEMP:%d", &s, &r, &t) == 3) {
+                    uart_speed = s;
+                    uart_rpm = r;
+                    uart_temp = t;
+                    uart_data_ready = true;
+                }
+                int remaining = len - (newline - data + 1);
+                if (remaining > 0) {
+                    memmove(data, newline + 1, remaining);
+                }
+                len = remaining;
+            } else if (len >= 255) {
+                len = 0;
+            }
+        }
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
 }
 
 static void flush_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
@@ -220,18 +283,32 @@ static void blink_timer_cb(lv_timer_t *timer) {
 }
 
 static void value_update_cb(lv_timer_t *timer) {
-    if (speed_val > 0) odo_val += speed_val / 3600;
     char buf[32];
+    
+    if (uart_data_ready) {
+        speed_val = uart_speed;
+        snprintf(buf, sizeof(buf), "%d", speed_val);
+        lv_label_set_text(speed_label, buf);
+
+        lv_bar_set_value(tach_bar, uart_rpm, LV_ANIM_OFF);
+        snprintf(buf, sizeof(buf), "%d", uart_rpm / 1000);
+        lv_label_set_text(tach_label, buf);
+
+        temp_val = uart_temp;
+        lv_arc_set_value(temp_arc, temp_val);
+        snprintf(buf, sizeof(buf), "%d", temp_val);
+        lv_label_set_text(temp_label, buf);
+        
+        uart_data_ready = false;
+    }
+
+    if (speed_val > 0) odo_val += speed_val / 3600;
     snprintf(buf, sizeof(buf), "ODO %d km", odo_val);
     lv_label_set_text(odo_label, buf);
 
     consumption = 5.0f + ((rand() % 20) / 10.0f);
     snprintf(buf, sizeof(buf), "%.1f km/l", consumption);
     lv_label_set_text(consumption_label, buf);
-
-    int rpm = lv_bar_get_value(tach_bar);
-    snprintf(buf, sizeof(buf), "%d", rpm / 1000);
-    lv_label_set_text(tach_label, buf);
 }
 
 static void lvgl_task(void *arg) {
@@ -412,17 +489,20 @@ static void create_dashboard(void) {
     lv_label_set_text(odo_label, buf);
 
     lv_timer_create(blink_timer_cb, 500, NULL);
-    lv_timer_create(value_update_cb, 1000, NULL);
+    lv_timer_create(value_update_cb, 100, NULL);
 }
 
 void app_main(void) {
-    ESP_LOGI(TAG, "=== PRIUS DASHBOARD GREEN BOLD ===");
+    ESP_LOGI(TAG, "=== PRIUS DASHBOARD GREEN BOLD + UART ===");
     backlight_init();
     ESP_ERROR_CHECK(display_init());
     esp_err_t tp_err = touch_init();
     if (tp_err != ESP_OK) {
         ESP_LOGW(TAG, "Touch failed: %s", esp_err_to_name(tp_err));
     }
+
+    uart_init();
+    xTaskCreate(uart_rx_task, "uart_rx", 4096, NULL, 5, NULL);
 
     lv_init();
     lv_display_t *disp = lv_display_create(DISP_H_RES, DISP_V_RES);
