@@ -268,7 +268,7 @@ static void tach_click_cb(lv_event_t *e) {
     lv_anim_set_var(&a, tach_bar);
     lv_anim_set_values(&a, 0, 6000);
     lv_anim_set_duration(&a, 1000);
-    lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_bar_set_value);
+    lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)(void (*)(void*, int32_t))lv_bar_set_value);
     lv_anim_set_path_cb(&a, lv_anim_path_ease_in_out);
     lv_anim_start(&a);
     ESP_LOGI(TAG, "Tach rev");
@@ -330,7 +330,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_color(left_arrow, C_GREEN_DIM, 0);
     lv_obj_set_style_text_font(left_arrow, &lv_font_montserrat_48, 0);
     lv_obj_align(left_arrow, LV_ALIGN_TOP_MID, -100, 40);
-    lv_obj_set_flag(left_arrow, LV_OBJ_FLAG_CLICKABLE, true);
+    lv_obj_add_flag(left_arrow, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(left_arrow, left_click_cb, LV_EVENT_CLICKED, NULL);
 
     right_arrow = lv_label_create(scr);
@@ -338,7 +338,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_color(right_arrow, C_GREEN_DIM, 0);
     lv_obj_set_style_text_font(right_arrow, &lv_font_montserrat_48, 0);
     lv_obj_align(right_arrow, LV_ALIGN_TOP_MID, 100, 40);
-    lv_obj_set_flag(right_arrow, LV_OBJ_FLAG_CLICKABLE, true);
+    lv_obj_add_flag(right_arrow, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(right_arrow, right_click_cb, LV_EVENT_CLICKED, NULL);
 
     // --- ЦЕНТР: СПИДОМЕТР ---
@@ -347,7 +347,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_font(speed_label, &lv_font_montserrat_72, 0);
     lv_obj_align(speed_label, LV_ALIGN_CENTER, 0, -40);
     lv_label_set_text(speed_label, "0");
-    lv_obj_set_flag(speed_label, LV_OBJ_FLAG_CLICKABLE, true);
+    lv_obj_add_flag(speed_label, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(speed_label, speed_click_cb, LV_EVENT_CLICKED, NULL);
 
     lv_obj_t *kmh_label = lv_label_create(scr);
@@ -361,7 +361,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_text_font(shift_label, &lv_font_montserrat_36, 0);
     lv_obj_align(shift_label, LV_ALIGN_CENTER, 0, 60);
     lv_label_set_text(shift_label, "SHIFT P");
-    lv_obj_set_flag(shift_label, LV_OBJ_FLAG_CLICKABLE, true);
+    lv_obj_add_flag(shift_label, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(shift_label, shift_click_cb, LV_EVENT_CLICKED, NULL);
 
     // --- ЛЕВЫЙ ВЕРХ: ТОПЛИВО ---
@@ -376,7 +376,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_arc_color(fuel_arc, C_GREEN_DIM, LV_PART_MAIN);
     lv_obj_set_style_arc_color(fuel_arc, C_GREEN, LV_PART_INDICATOR);
     lv_obj_set_style_arc_rounded(fuel_arc, true, 0);
-    lv_obj_set_flag(fuel_arc, LV_OBJ_FLAG_CLICKABLE, true);
+    lv_obj_add_flag(fuel_arc, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(fuel_arc, fuel_click_cb, LV_EVENT_CLICKED, NULL);
 
     fuel_label = lv_label_create(scr);
@@ -398,7 +398,7 @@ static void create_dashboard(void) {
     lv_obj_set_style_arc_color(temp_arc, C_GREEN_DIM, LV_PART_MAIN);
     lv_obj_set_style_arc_color(temp_arc, C_GREEN, LV_PART_INDICATOR);
     lv_obj_set_style_arc_rounded(temp_arc, true, 0);
-    lv_obj_set_flag(temp_arc, LV_OBJ_FLAG_CLICKABLE, true);
+    lv_obj_add_flag(temp_arc, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(temp_arc, temp_click_cb, LV_EVENT_CLICKED, NULL);
 
     temp_label = lv_label_create(scr);
@@ -416,13 +416,13 @@ static void create_dashboard(void) {
     lv_obj_align(rpm_title, LV_ALIGN_BOTTOM_MID, 0, -130);
 
     tach_bar = lv_bar_create(scr);
-    lv_obj_set_size(tach_bar, 700, 32); // Длинная и жирная полоска
+    lv_obj_set_size(tach_bar, 700, 32);
     lv_obj_align(tach_bar, LV_ALIGN_BOTTOM_MID, 0, -90);
     lv_bar_set_range(tach_bar, 0, 9000);
     lv_bar_set_value(tach_bar, 0, LV_ANIM_OFF);
     lv_obj_set_style_bg_color(tach_bar, C_GREEN_DIM, 0);
     lv_obj_set_style_bg_color(tach_bar, C_GREEN, LV_PART_INDICATOR);
-    lv_obj_set_style_radius(tach_bar, 16, 0); // Сильное скругление краев
+    lv_obj_set_style_radius(tach_bar, 16, 0);
 
     tach_label = lv_label_create(scr);
     lv_obj_set_style_text_color(tach_label, C_GREEN_BRIGHT, 0);
@@ -430,7 +430,7 @@ static void create_dashboard(void) {
     lv_obj_align_to(tach_label, tach_bar, LV_ALIGN_CENTER, 0, 0);
     lv_label_set_text(tach_label, "0");
     
-    lv_obj_set_flag(tach_bar, LV_OBJ_FLAG_CLICKABLE, true);
+    lv_obj_add_flag(tach_bar, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(tach_bar, tach_click_cb, LV_EVENT_CLICKED, NULL);
 
     // --- НИЖНИЕ УГЛЫ: РАСХОД И ОДО ---
