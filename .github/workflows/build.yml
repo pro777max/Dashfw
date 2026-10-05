@@ -1,13 +1,17 @@
-﻿name: Build ESP32-P4
-on: [push]
+name: Build ESP32-P4
+
+on: [push, workflow_dispatch]
+
 permissions:
   contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: ESP-IDF Build
+
+      - name: ESP-IDF Build (v5.5.3 / esp32p4)
         uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: v5.5.3
@@ -15,35 +19,26 @@ jobs:
           command: |
             git config --global --add safe.directory /__w/Dashfw/Dashfw
             rm -f sdkconfig dependencies.lock
+            idf.py set-target esp32p4
             idf.py build
-            esptool.py --chip esp32p4 merge_bin -o dash_merged.bin --flash_mode qio --flash_freq 80m --flash_size 16MB 0x2000 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/dash.bin
-      - name: Dump display APIs
-        run: |
-          B=managed_components/espressif__esp32_p4_function_ev_board
-          L=managed_components/espressif__esp_lvgl_port
-          E=managed_components/espressif__esp_lcd_ek79007
-          echo "=== BSP display.h ==="
-          sed -n '1,160p' $B/include/bsp/display.h || true
-          echo "=== BSP header funcs ==="
-          grep -nE "bsp_display|bsp_touch|bsp_backlight" $B/include/bsp/esp32_p4_function_ev_board.h | head -40 || true
-          echo "=== BSP Kconfig ==="
-          sed -n '1,140p' $B/Kconfig || true
-          echo "=== lvgl_port disp cfg ==="
-          F=$(grep -rl "lvgl_port_display_cfg_t" $L/include/ | head -1); echo "file: $F"
-          grep -n -B2 -A55 "lvgl_port_display_cfg_t" $F | head -90
-          echo "=== lvgl_port Kconfig ==="
-          grep -nE "config |default |bool |int " $L/Kconfig | head -50 || true
-          echo "=== ek79007 vendor cfg ==="
-          grep -rn -B3 -A25 "vendor_config" $E/include/esp_lcd_ek79007.h | head -60 || true
+            idf.py size
+            esptool.py --chip esp32p4 merge_bin \
+              -o dash_merged.bin \
+              --flash_mode qio --flash_freq 80m --flash_size 16MB \
+              0x2000  build/bootloader/bootloader.bin \
+              0x8000  build/partition_table/partition-table.bin \
+              0x10000 build/dash.bin
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: dash_merged
           path: dash_merged.bin
           retention-days: 7
-      - uses: softprops/action-gh-release@v2
+
+      - name: Publish nightly release
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: nightly
           files: dash_merged.bin
           prerelease: true
-
